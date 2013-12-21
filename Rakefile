@@ -1,12 +1,19 @@
 require "bundler/gem_tasks"
 
 rule ".rb" => [".rl"] do |t|
-  sh "ragel", "-R", t.source, "-o", t.name
+  sh "ragel", "-F1", "-R", t.source, "-o", t.name
 end
 
 namespace :ragel do
   desc "Build all ragel parsers"
   task :build => "lib/stompede/stomp/parser.rb"
+
+  desc "Delete all ragel-generated parsers"
+  task :clean do
+    FileList["**/*.rl"].each do |file|
+      rm_f file.sub(".rl", ".rb")
+    end
+  end
 
   desc "Show stomp parser state machine as an image"
   task :show do
@@ -24,6 +31,11 @@ end
 desc "Run the test suite."
 task :spec => "ragel:build" do
   sh "rspec"
+end
+
+desc "Run the benchmarks."
+task :bench => "ragel:build" do
+  sh "ruby", "spec/bench_helper.rb"
 end
 
 task :default => :spec
