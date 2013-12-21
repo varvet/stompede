@@ -4,23 +4,24 @@
   # data, p, pe, eof, cs, top, stack, ts, te and act
 
   action mark { m = p }
-  action write_command { message.write_command(data[m..p]) }
+  action write_command { message.write_command(data[m...p]) }
 
-  action store_key { key = data[m..p] }
-  action write_header { message.write_header(key, data[m..p]) }
+  action store_key { key = data[m...p] }
+  action write_header { message.write_header(key, data[m...p]) }
 
   NULL = "\0";
   LF = "\n";
   CR = "\r";
   EOL = CR? LF;
   OCTET = any;
-  HEADER_OCTET = OCTET - CR - LF - ":";
+  HEADER_ESCAPE = "\\" ("\\" | "n" | "r" | "c");
+  HEADER_OCTET = HEADER_ESCAPE | OCTET - CR - LF - ":" - "\\";
 
   command_name = "CONNECT";
-  command = command_name > mark @ write_command;
+  command = command_name > mark % write_command;
 
-  header_key = HEADER_OCTET+ > mark @ store_key;
-  header_value = HEADER_OCTET* > mark @ write_header;
+  header_key = HEADER_OCTET+ > mark % store_key;
+  header_value = HEADER_OCTET* > mark % write_header;
   header = header_key ":" header_value EOL;
 
   message := command EOL header* EOL NULL;

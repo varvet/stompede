@@ -28,14 +28,24 @@ describe Stompede::Stomp::Parser do
       message = parser.parse("CONNECT\nnull\\c:\\r\\n\\c\\\\\n\n\x00")
       message.headers.should eq("null:" => "\r\n:\\")
     end
+
+    it "can parse headers with no value" do
+      message = parser.parse("CONNECT\nmoo:\n\n\x00")
+      message.headers.should eq("moo" => "")
+    end
+
+    it "prioritises first header when given multiple of same key" do
+      message = parser.parse("CONNECT\nkey:first\nkey:second\n\n\x00")
+      message.headers.should eq("key" => "first")
+    end
   end
 
   describe "parsing body" do
-    it " body"
-    it "parses binary body"
+    it "can parse body"
+    it "can parse binary body"
   end
 
-  describe "invalid messages" do
+  describe "fails on invalid messages" do
     specify "unfinished command" do
       parser.parse("CONNECT\x00").should be_nil
     end
@@ -45,7 +55,11 @@ describe Stompede::Stomp::Parser do
     end
 
     specify "header with colon" do
-      parser.parse("CONNECT\nfoo: :bar\n\x00").should be_nil
+      parser.parse("CONNECT\nfoo: :bar\n\n\x00").should be_nil
+    end
+
+    specify "header with invalid escape" do
+      parser.parse("CONNECT\nfoo:\\t\n\n\x00").should be_nil
     end
   end
 end
