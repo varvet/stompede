@@ -41,7 +41,11 @@ describe Stompede::Stomp::Parser do
   end
 
   describe "parsing body" do
-    it "can parse body"
+    it "can parse body" do
+      message = parser.parse("CONNECT\n\nbody\x00")
+      message.body.should eq "body"
+    end
+
     it "can parse binary body"
   end
 

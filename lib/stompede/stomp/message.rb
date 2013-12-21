@@ -33,6 +33,10 @@ module Stompede
         @headers[translate_header(key)] ||= translate_header(value)
       end
 
+      def write_body(body)
+        @body = body
+      end
+
       private
 
       # @see http://stomp.github.io/stomp-specification-1.2.html#Value_Encoding

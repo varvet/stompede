@@ -9,6 +9,8 @@
   action store_key { key = data[m...p] }
   action write_header { message.write_header(key, data[m...p]) }
 
+  action write_body { message.write_body(data[m...p]) }
+
   NULL = "\0";
   LF = "\n";
   CR = "\r";
@@ -24,7 +26,9 @@
   header_value = HEADER_OCTET* > mark % write_header;
   header = header_key ":" header_value EOL;
 
-  message := command EOL header* EOL NULL;
+  body = OCTET+ > mark % write_body;
+
+  message := command EOL header* EOL body? NULL;
 }%%
 
 module Stompede
