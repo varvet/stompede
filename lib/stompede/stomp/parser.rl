@@ -1,5 +1,5 @@
 %%{
-  machine Message;
+  machine message;
 
   # data, p, pe, eof, cs, top, stack, ts, te and act
 
@@ -28,34 +28,34 @@
 
 module Stompede
   module Stomp
-    module Parser
+    class Parser
       # this manipulates the singleton class of our context,
       # so we do not want to run this code very often or we
       # bust our ruby method caching
       %% write data noprefix;
 
-      class << self
-        # @param [String] data
-        # @return [Stomp::Message]
-        def parse(data)
-          # re-encode the input as BINARY to be able to refer
-          # on the byte-level with data[i].ord
-          data = data.force_encoding("BINARY")
+      # Parse a chunk of Stomp-formatted data into a Message.
+      #
+      # @param [String] data
+      # @return [Stomp::Message]
+      def self.parse(data)
+        # re-encode the input as BINARY to be able to refer
+        # on the byte-level with data[i].ord
+        data = data.force_encoding("BINARY")
 
-          # this is where our parsed components end up
-          message = Stomp::Message.new
+        # this is where our parsed components end up
+        message = Stomp::Message.new
 
-          p = 0 # pointer to current character
-          m = 0 # pointer to marked character (for buffering)
-          pe = data.length # pointer to end of input
-          cs = start # current starting state
+        p = 0 # pointer to current character
+        pe = data.length # pointer to end of input
+        cs = Stomp::Parser.start # current starting state
+        m = 0 # pointer to marked character (for buffering)
 
-          # write out the ragel state machine parser
-          %% write exec;
+        # write out the ragel state machine parser
+        %% write exec;
 
-          # if parsing parsed a complete message, return it
-          message if cs >= first_final
-        end
+        # if parsing parsed a complete message, return it
+        message if cs >= Stomp::Parser.first_final
       end
     end
   end
