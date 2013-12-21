@@ -4,10 +4,10 @@
   # data, p, pe, eof, cs, top, stack, ts, te and act
 
   action mark { m = p }
-  action write_command { message.command = data[m..p] }
+  action write_command { message.write_command(data[m..p]) }
 
   action store_key { key = data[m..p] }
-  action write_header { message.headers[key] = data[m..p] }
+  action write_header { message.write_header(key, data[m..p]) }
 
   NULL = "\0";
   LF = "\n";
