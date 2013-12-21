@@ -6,7 +6,7 @@ end
 
 namespace :ragel do
   task :generate do
-    sh "ragel -R lib/stompede/stomp/parser.rl"
+    exec "ragel -R lib/stompede/stomp/parser.rl"
   end
 
   task :show do
