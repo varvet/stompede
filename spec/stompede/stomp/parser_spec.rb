@@ -1,5 +1,5 @@
-describe Stompede::Stomp do
-  let(:parser) { Stompede::Stomp }
+describe Stompede::Stomp::Parser do
+  let(:parser) { Stompede::Stomp::Parser }
 
   describe "parsing command" do
     it "can parse commands" do

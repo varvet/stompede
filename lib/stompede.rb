@@ -1,6 +1,6 @@
 require "stompede/version"
 
-require "stompede/stomp"
+require "stompede/stomp/parser"
 require "stompede/stomp/message"
 
 module Stompede
