@@ -17,8 +17,9 @@
 
   # Message components.
   command = "CONNECT";
+  consume_command = command > Mark @ { @message.command = consume_utf8 };
 
-  message := (command > Mark @ { @message.command = consume_utf8 }) EOL EOL NULL;
+  message := consume_command EOL EOL NULL;
 }%%
 
 module Stompede
