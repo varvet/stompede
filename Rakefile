@@ -6,11 +6,11 @@ end
 
 namespace :ragel do
   task :generate do
-    sh "ragel -R lib/stompede/stomp/parser.rl"
+    sh "ragel -R lib/stompede/stomp.rl"
   end
 
   task :show do
-    sh "ragel -V -p lib/stompede/stomp/parser.rl | dot -Tpng | open -a Preview -f"
+    sh "ragel -V -p lib/stompede/stomp.rl | dot -Tpng | open -a Preview -f"
   end
 end
 

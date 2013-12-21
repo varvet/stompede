@@ -1,5 +1,5 @@
-describe Stompede::Stomp::Parser do
-  let(:parser) { Stompede::Stomp::Parser }
+describe Stompede::Stomp do
+  let(:parser) { Stompede::Stomp }
 
   describe "messages" do
     it "parses a CONNECT frame" do

@@ -20,9 +20,11 @@ module Stompede
     # @param [String] message
     def self.parse(message)
       data = message.unpack("c*")
-      eof  = data.length
 
-      %% write init;
+      p = 0
+      pe = data.length
+      cs = self.Message_start
+
       %% write exec;
 
       [p, pe, cs]

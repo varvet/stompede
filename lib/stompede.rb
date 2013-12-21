@@ -1,5 +1,5 @@
 require "stompede/version"
-require "stompede/stomp/parser"
+require "stompede/stomp"
 
 module Stompede
 end
