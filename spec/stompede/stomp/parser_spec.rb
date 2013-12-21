@@ -19,7 +19,10 @@ describe Stompede::Stomp::Parser do
       message.headers.should eq("moo" => "cow", "baah" => "sheep")
     end
 
-    it "can parse headers with NULLs in them"
+    it "can parse headers with NULLs in them" do
+      message = parser.parse("CONNECT\nnull\x00:null\x00\n\n\x00")
+      message.headers.should eq("null\x00" => "null\x00")
+    end
   end
 
   describe "parsing body" do
