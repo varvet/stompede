@@ -1,33 +1,53 @@
 %%{
   machine Message;
 
+  variable data @_data;
+  variable p    @_p;
+
+  # data, p, pe, eof, cs, top, stack, ts, te and act
+
+  # Actions.
+  action Mark { mark }
+
+  # Common constants.
   NULL = "\0";
   LF = "\n";
   CR = "\r";
   EOL = CR? LF;
 
+  # Message components.
   command = "CONNECT";
 
-  frame = command EOL;
-
-  main := frame;
+  message := (command > Mark @ { @message.command = consume }) EOL EOL NULL;
 }%%
 
 module Stompede
   module Stomp
     %% write data;
 
-    # @param [String] message
-    def self.parse(message)
-      data = message.unpack("c*")
+    class << self
+      # @param [String] data
+      # @return [Stomp::Message]
+      def parse(data)
+        @message = Stomp::Message.new
 
-      p = 0
-      pe = data.length
-      cs = self.Message_start
+        @_data = data.unpack("c*")
+        @_p = 0
+        pe = data.length
+        cs = self.Message_start
 
-      %% write exec;
+        %% write exec;
 
-      [p, pe, cs]
+        @message
+      end
+
+      def mark
+        @mark = @_p
+      end
+
+      def consume
+        @_data[@mark..@_p].pack("c*")
+      end
     end
   end
 end
