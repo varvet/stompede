@@ -1,5 +1,8 @@
 require "bundler/gem_tasks"
 
+# Generate Ragel parser on gem build; always.
+task :build => "ragel:generate"
+
 task :console do
   exec "pry", "-rbundler/setup", "-rstompede"
 end
