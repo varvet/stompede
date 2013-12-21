@@ -9,14 +9,12 @@ describe Stompede::Stomp do
   end
 
   describe "parsing headers" do
-    it "can parse headers", pending: true do
-      message = parser.parse("CONNECT\nmoo: cow\nnu\x00ll:a\x00b\n\x00")
-      message.headers.should eq({
-        "moo" => "cow",
-        "baah" => ":sheep:",
-        "nu\x00ll" => "a\x00b",
-      })
+    it "can parse simple headers" do
+      message = parser.parse("CONNECT\nmoo:cow\n\n\x00")
+      message.headers.should eq("moo" => "cow")
     end
+
+    it "can parse headers with NULLs in them"
   end
 
   describe "parsing body" do
@@ -33,7 +31,7 @@ describe Stompede::Stomp do
       parser.parse("CONNECT\n\x00").should be_nil
     end
 
-    specify "header with colon", pending: true do
+    specify "header with colon" do
       parser.parse("CONNECT\nfoo: :bar\n\x00").should be_nil
     end
   end

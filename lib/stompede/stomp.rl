@@ -1,25 +1,29 @@
 %%{
   machine Message;
 
-  variable data @_data;
-  variable p    @_p;
-
   # data, p, pe, eof, cs, top, stack, ts, te and act
 
-  # Actions.
-  action Mark { mark }
+  action mark { m = p }
+  action write_command { message.command = data[m..p] }
 
-  # Common constants.
+  action store_key { key = data[m..p] }
+  action write_header { message.headers[key] = data[m..p] }
+
   NULL = "\0";
   LF = "\n";
   CR = "\r";
   EOL = CR? LF;
+  OCTET = any;
+  HEADER_OCTET = OCTET - CR - LF - ":";
 
-  # Message components.
-  command = "CONNECT";
-  consume_command = command > Mark @ { @message.command = consume_utf8 };
+  command_name = "CONNECT";
+  command = command_name > mark @ write_command;
 
-  message := consume_command EOL EOL NULL;
+  header_key = HEADER_OCTET+ > mark @ store_key;
+  header_value = HEADER_OCTET* > mark @ write_header;
+  header = header_key ":" header_value EOL;
+
+  message := command EOL header* EOL NULL;
 }%%
 
 module Stompede
@@ -30,26 +34,16 @@ module Stompede
       # @param [String] data
       # @return [Stomp::Message]
       def parse(data)
-        @message = Stomp::Message.new
+        message = Stomp::Message.new
 
-        @_data = data.force_encoding("BINARY")
-        @_p = 0
+        data = data.force_encoding("BINARY")
+        p = 0
         pe = data.length
         cs = start
 
         %% write exec;
 
-        @message if cs >= first_final
-      end
-
-      def mark
-        @mark = @_p
-      end
-
-      def consume_utf8
-        string = @_data[@mark..@_p].force_encoding("UTF-8")
-        @mark = nil # signal the marked data is consumed
-        string
+        message if cs >= first_final
       end
     end
   end
