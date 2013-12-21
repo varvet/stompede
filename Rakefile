@@ -10,7 +10,7 @@ namespace :ragel do
   end
 
   task :show do
-    exec "ragel -V lib/stompede/stomp/parser.rl | dot -Tpng | open -a Preview -f"
+    exec "ragel -V -p lib/stompede/stomp/parser.rl | dot -Tpng | open -a Preview -f"
   end
 end
 
