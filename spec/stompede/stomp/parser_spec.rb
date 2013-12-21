@@ -14,6 +14,11 @@ describe Stompede::Stomp do
       message.headers.should eq("moo" => "cow")
     end
 
+    it "can parse multiple headers" do
+      message = parser.parse("CONNECT\nmoo:cow\nbaah:sheep\n\n\x00")
+      message.headers.should eq("moo" => "cow", "baah" => "sheep")
+    end
+
     it "can parse headers with NULLs in them"
   end
 

@@ -28,21 +28,31 @@
 
 module Stompede
   module Stomp
+    # this manipulates the singleton class of our context,
+    # so we do not want to run this code very often or we
+    # bust our ruby method caching
     %% write data noprefix;
 
     class << self
       # @param [String] data
       # @return [Stomp::Message]
       def parse(data)
+        # re-encode the input as BINARY to be able to refer
+        # on the byte-level with data[i].ord
+        data = data.force_encoding("BINARY")
+
+        # this is where our parsed components end up
         message = Stomp::Message.new
 
-        data = data.force_encoding("BINARY")
-        p = 0
-        pe = data.length
-        cs = start
+        p = 0 # pointer to current character
+        m = 0 # pointer to marked character (for buffering)
+        pe = data.length # pointer to end of input
+        cs = start # current starting state
 
+        # write out the ragel state machine parser
         %% write exec;
 
+        # if parsing parsed a complete message, return it
         message if cs >= first_final
       end
     end
