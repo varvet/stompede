@@ -20,16 +20,20 @@ at_exit do
   reports = Benchmark.bmbm do |x|
     $__benchmarks__.each do |info|
       benchname = "#{info[:file]}:#{info[:line]} #{info[:name]} (x#{info[:iterations]})"
+      raise "#{benchname} returned a non-truthy value" unless info[:block].call
       x.report(benchname) { info[:iterations].times(&info[:block]) }
     end
   end
 
+  width = reports.map { |r| r.label.length }.max + 3
   puts
-  puts "Results ".ljust(86, "-")
+  puts "Results ".ljust(width, "-")
   reports.zip($__benchmarks__).each do |report, bench|
-    puts "#{report.label}: #{(bench[:iterations] / report.total).round(2)} / s"
+    speed = "#{(bench[:iterations] / report.total).round(2)} / s"
+    padding = " " * (width - report.label.length)
+    puts report.label + padding + speed
   end
-  puts "".ljust(86, "-")
+  puts "".ljust(width, "-")
 end
 
 Dir["./**/*_bench.rb"].each do |benchmark|
