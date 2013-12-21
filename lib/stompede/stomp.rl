@@ -31,7 +31,7 @@ module Stompede
       def parse(data)
         @message = Stomp::Message.new
 
-        @_data = data.unpack("c*")
+        @_data = data.force_encoding("BINARY")
         @_p = 0
         pe = data.length
         cs = self.Message_start
@@ -46,7 +46,7 @@ module Stompede
       end
 
       def consume
-        @_data[@mark..@_p].pack("c*")
+        @_data[@mark..@_p].force_encoding("UTF-8")
       end
     end
   end
