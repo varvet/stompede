@@ -18,7 +18,7 @@
   # Message components.
   command = "CONNECT";
 
-  message := (command > Mark @ { @message.command = consume }) EOL EOL NULL;
+  message := (command > Mark @ { @message.command = consume_utf8 }) EOL EOL NULL;
 }%%
 
 module Stompede
@@ -45,8 +45,10 @@ module Stompede
         @mark = @_p
       end
 
-      def consume
-        @_data[@mark..@_p].force_encoding("UTF-8")
+      def consume_utf8
+        string = @_data[@mark..@_p].force_encoding("UTF-8")
+        @mark = nil # signal the marked data is consumed
+        string
       end
     end
   end
