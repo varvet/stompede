@@ -23,6 +23,11 @@ describe Stompede::Stomp::Parser do
       message = parser.parse("CONNECT\nnull\x00:null\x00\n\n\x00")
       message.headers.should eq("null\x00" => "null\x00")
     end
+
+    it "can parse headers with escape characters" do
+      message = parser.parse("CONNECT\nnull\\c:\\r\\n\\c\\\\\n\n\x00")
+      message.headers.should eq("null:" => "\r\n:\\")
+    end
   end
 
   describe "parsing body" do
