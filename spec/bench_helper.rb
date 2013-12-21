@@ -5,7 +5,7 @@ require "pry"
 
 $__benchmarks__ = []
 
-def bench(name, iterations = 100_000, &block)
+def bench(name, iterations = 10_000, &block)
   file, line, _ = caller[0].split(':')
   $__benchmarks__ << {
     file: File.basename(file),
