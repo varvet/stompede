@@ -23,7 +23,7 @@
 
 module Stompede
   module Stomp
-    %% write data;
+    %% write data noprefix;
 
     class << self
       # @param [String] data
@@ -34,11 +34,11 @@ module Stompede
         @_data = data.force_encoding("BINARY")
         @_p = 0
         pe = data.length
-        cs = self.Message_start
+        cs = start
 
         %% write exec;
 
-        @message
+        @message if cs >= first_final
       end
 
       def mark
