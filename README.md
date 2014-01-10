@@ -1,24 +1,14 @@
 # Stompede
 
-TODO: Write a gem description
+STOMP over WebSockets for Ruby. Stompede aims to supply:
 
-## Installation
-
-Add this line to your application's Gemfile:
-
-    gem 'stompede'
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install stompede
+- A STOMP message parser.
+- A STOMP message generator.
+- A STOMP protocol WebSocket server.
 
 ## Usage
 
-TODO: Write usage instructions here
+TODO: Write usage instructions here.
 
 ## Contributing
 

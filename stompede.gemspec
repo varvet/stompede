@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Kim Burgestrand"]
   spec.email         = ["kim@burgestrand.se"]
   spec.summary       = %q{STOMP over WebSockets for Ruby.}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/Burgestrand/stompede"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files`.split($/)
