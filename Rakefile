@@ -1,6 +1,6 @@
 require "bundler/gem_tasks"
 
-rule ".rb" => [".rl"] do |t|
+rule ".rb" => ".rb.rl" do |t|
   sh "ragel", "-F1", "-R", t.source, "-o", t.name
 end
 
@@ -16,8 +16,9 @@ namespace :ragel do
   end
 
   desc "Show stomp parser state machine as an image"
-  task :show do
-    sh "ragel -V -p lib/stompede/stomp/parser.rl | dot -Tpng | open -a Preview -f"
+  task :show => "lib/stompede/stomp/parser.rb" do |t|
+    ragel = t.prerequisite_tasks[0]
+    sh "ragel -V -p #{ragel.source} | dot -Tpng | open -a Preview -f"
   end
 end
 
