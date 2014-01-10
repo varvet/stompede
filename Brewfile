@@ -1,1 +1,2 @@
 install ragel
+install graphviz
