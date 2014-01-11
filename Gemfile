@@ -2,6 +2,9 @@ source 'https://rubygems.org'
 
 gemspec
 
+gem "pry"
+
 platforms :rbx do
-  gem "rubysl", "~> 2.0"
+  gem "rb-readline"
+  gem "rubysl-singleton"
 end

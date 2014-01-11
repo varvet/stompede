@@ -1,7 +1,6 @@
 require "bundler/setup"
 require "stompede"
 require "benchmark/ips"
-require "pry"
 
 $__benchmarks__ = []
 
