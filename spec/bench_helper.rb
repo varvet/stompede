@@ -1,40 +1,28 @@
 require "bundler/setup"
 require "stompede"
-require "benchmark"
+require "benchmark/ips"
 require "pry"
 
 $__benchmarks__ = []
 
 def bench(name, *args, &block)
-  iterations = 100_000
   file, line, _ = caller[0].split(':')
   $__benchmarks__ << {
     file: File.basename(file),
     line: line,
     name: name,
-    iterations: iterations,
     block: proc { block.call(*args) }
   }
 end
 
 at_exit do
-  reports = Benchmark.bmbm do |x|
+  reports = Benchmark.ips(time = 2) do |x|
     $__benchmarks__.each do |info|
-      benchname = "#{info[:file]}:#{info[:line]} #{info[:name]} (x#{info[:iterations]})"
+      benchname = "#{info[:file]}:#{info[:line]} #{info[:name]}"
       raise "#{benchname} returned a non-truthy value" unless info[:block].call
-      x.report(benchname) { info[:iterations].times(&info[:block]) }
+      x.report(benchname, &info[:block])
     end
   end
-
-  width = reports.map { |r| r.label.length }.max + 3
-  puts
-  puts "Results ".ljust(width, "-")
-  reports.zip($__benchmarks__).each do |report, bench|
-    speed = "#{(bench[:iterations] / report.total).round(2)} / s"
-    padding = " " * (width - report.label.length)
-    puts report.label + padding + speed
-  end
-  puts "".ljust(width, "-")
 end
 
 Dir["./**/*_bench.rb"].each do |benchmark|
