@@ -46,7 +46,10 @@ describe Stompede::Stomp::Parser do
       message.body.should eq "body"
     end
 
-    it "can parse binary body"
+    it "can parse binary body", pending: "fixed length messages" do
+      message = parser.parse("CONNECT\ncontent-length:1\n\n\x00\x00")
+      message.body.should eq "body"
+    end
   end
 
   describe "fails on invalid messages" do
@@ -64,6 +67,14 @@ describe Stompede::Stomp::Parser do
 
     specify "header with invalid escape" do
       parser.parse("CONNECT\nfoo:\\t\n\n\x00").should be_nil
+    end
+
+    specify "content length cutting message short", pending: "fixed length messages" do
+      parser.parse("CONNECT\ncontent-length:0\n\nx\x00").should be_nil
+    end
+
+    specify "not enough to fit content length", pending: "fixed length messages" do
+      parser.parse("CONNECT\ncontent-length:2\n\nx\x00").should be_nil
     end
   end
 end
