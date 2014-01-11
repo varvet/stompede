@@ -4,31 +4,37 @@
   # data, p, pe, eof, cs, top, stack, ts, te and act
 
   action mark { m = p }
+  action mark_key { mk = data[m...p] }
+
   action write_command { message.write_command(data[m...p]) }
-
-  action store_key { key = data[m...p] }
-  action write_header { message.write_header(key, data[m...p]) }
-
+  action write_header { message.write_header(mk, data[m...p]) }
   action write_body { message.write_body(data[m...p]) }
 
+  action init_message {
+    message = Stomp::Message.new
+  }
+  action finish_headers {}
+  action finish_message {
+    return message
+  }
+
   NULL = "\0";
-  LF = "\n";
-  CR = "\r";
-  EOL = CR? LF;
+  EOL = "\r"? . "\n";
   OCTET = any;
-  HEADER_ESCAPE = "\\" ("\\" | "n" | "r" | "c");
-  HEADER_OCTET = HEADER_ESCAPE | OCTET - CR - LF - ":" - "\\";
 
-  command_name = "CONNECT";
-  command = command_name > mark % write_command;
+  client_command = "CONNECT" > mark;
+  command = client_command % write_command . EOL;
 
-  header_key = HEADER_OCTET+ > mark % store_key;
-  header_value = HEADER_OCTET* > mark % write_header;
-  header = header_key ":" header_value EOL;
+  HEADER_ESCAPE = "\\" . ("\\" | "n" | "r" | "c");
+  HEADER_OCTET = HEADER_ESCAPE | (OCTET - "\r" - "\n" - "\\" - ":");
+  header_key = HEADER_OCTET+ > mark % mark_key;
+  header_value = HEADER_OCTET* > mark;
+  header = header_key . ":" . header_value;
+  headers = (header % write_header . EOL)* % finish_headers . EOL;
 
-  body = OCTET+ > mark % write_body;
+  dynamic_body = (OCTET* > mark) % write_body :> NULL;
 
-  message := command EOL header* EOL body? NULL;
+  message := (command > init_message) :> headers :> (dynamic_body @ finish_message);
 }%%
 
 module Stompede
@@ -42,19 +48,15 @@ module Stompede
       # Parse a chunk of Stomp-formatted data into a Message.
       #
       # @param [String] data
-      # @return [Stomp::Message]
+      # @return [Stomp::Message, nil]
       def self.parse(data)
-        # re-encode the input as BINARY to be able to refer
-        # on the byte-level with data[i].ord
-        data = data.force_encoding("BINARY")
-
-        # this is where our parsed components end up
-        message = Stomp::Message.new
-
+        data = data.force_encoding("BINARY") # input data, referenced by data[i]
+        message = nil # handle to the message currently being parsed, if any
         p = 0 # pointer to current character
-        pe = data.length # pointer to end of input
-        cs = Stomp::Parser.start # current starting state
+        pe = data.length # end of input
+        cs = Stomp::Parser.start # current state
         m = 0 # pointer to marked character (for buffering)
+        mk = nil # key for header currently being read
 
         # write out the ragel state machine parser
         %% write exec;
