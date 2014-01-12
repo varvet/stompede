@@ -6,11 +6,11 @@
   # data, p, pe, eof, cs, top, stack, ts, te and act
 
   action mark { m = p }
-  action mark_key { mk = data.byteslice(m, p) }
+  action mark_key { mk = data.byteslice(m, p - m) }
 
-  action write_command { message.write_command(data.byteslice(m, p)) }
-  action write_header { message.write_header(mk, data.byteslice(m, p)) }
-  action write_body { message.write_body(data.byteslice(m, p)) }
+  action write_command { message.write_command(data.byteslice(m, p - m)) }
+  action write_header { message.write_header(mk, data.byteslice(m, p - m)) }
+  action write_body { message.write_body(data.byteslice(m, p - m)) }
 
   action init_message {
     message = Stomp::Message.new
@@ -58,7 +58,7 @@ module Stompede
       # @param [Parser] state
       # @return [Stomp::Message, nil]
       def self.parse(data, state)
-        pe = data.length # end of chunk
+        pe = data.bytesize # end of chunk
         eof = :ignored # end of input
 
         p = state.cursor # pointer to current character
