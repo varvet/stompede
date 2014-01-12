@@ -10,6 +10,17 @@ describe Stompede::Stomp::Parser do
       messages
     end
 
+    describe "multiple invocations" do
+      it "parses simple split up messages" do
+        message = nil
+        parser.parse("CONNECT\n") { |m| message = m }
+        message.should be_nil
+        parser.parse("\n\x00") { |m| message = m }
+        message.should_not be_nil
+        message.command.should eq "CONNECT"
+      end
+    end
+
     describe "parsing multiple messages" do
       it "yields multiple messages in a single invocation" do
         messages = parse_all("CONNECT\n\n\x00CONNECT\n\n\x00CONNECT\n\n\x00")

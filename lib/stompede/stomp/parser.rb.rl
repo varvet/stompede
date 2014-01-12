@@ -57,7 +57,7 @@
 
   message = (command > mark_message) :> headers :> (dynamic_body @ finish_message);
 
-  stream := (EOL* . message . EOL*)+;
+  stream := (EOL* :> message :> EOL*)+;
 }%%
 
 module Stompede
@@ -82,7 +82,7 @@ module Stompede
         pe = data.bytesize # end of chunk
         eof = :ignored # end of input
 
-        p = state.cursor # pointer to current character
+        p = 0 # pointer to current character
         message = state.message # message currently being parsed, if any
         cs = state.current_state # current state
         m = state.mark # pointer to marked character (for data buffering)
@@ -125,7 +125,7 @@ module Stompede
         @cursor = 0
         @current_state = Stomp::Parser.start
         @message = nil
-        @mark = 0
+        @mark = nil
         @mark_key = nil
       end
 
