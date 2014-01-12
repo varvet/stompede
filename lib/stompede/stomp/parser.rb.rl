@@ -1,24 +1,43 @@
 %%{
   machine message;
 
+  # data, p, pe, eof, cs, top, stack, ts, te and act
   getkey data.getbyte(p); # code for retrieving current char
 
-  # data, p, pe, eof, cs, top, stack, ts, te and act
 
+  ## Action state - needs resetting once consumed!
   action mark { m = p }
-  action mark_key { mk = data.byteslice(m, p - m) }
-
-  action write_command { message.write_command(data.byteslice(m, p - m)) }
-  action write_header { message.write_header(mk, data.byteslice(m, p - m)) }
-  action write_body { message.write_body(data.byteslice(m, p - m)) }
-
-  action init_message {
-    message = Stomp::Message.new
+  action mark_key {
+    mk = data.byteslice(m, p - m) # needs reset
+    m = nil
   }
-  action finish_headers {}
+  action mark_message { message = Stomp::Message.new }
+
+  ## Action commands - should reset used state!
+  action write_command {
+    message.write_command(data.byteslice(m, p - m))
+    m = nil
+  }
+
+  action write_header {
+    message.write_header(mk, data.byteslice(m, p - m))
+    m = mk = nil
+  }
+
+  action write_body {
+    message.write_body(data.byteslice(m, p - m))
+    m = nil
+  }
+
+  action finish_headers {
+  }
+
   action finish_message {
-    return message
+    yield message
+    message = nil
   }
+
+  ## Stomp message grammar
 
   NULL = "\0";
   EOL = "\r"? . "\n";
@@ -36,7 +55,7 @@
 
   dynamic_body = (OCTET* > mark) % write_body :> NULL;
 
-  message := (command > init_message) :> headers :> (dynamic_body @ finish_message);
+  message := (command > mark_message) :> headers :> (dynamic_body @ finish_message);
 }%%
 
 module Stompede
@@ -67,13 +86,17 @@ module Stompede
         m = state.mark # pointer to marked character (for data buffering)
         mk = state.mark_key # key for header currently being read
 
-        %% write exec;
-
-        state.cursor = p
-        state.message = message
-        state.current_state = cs
-        state.mark = m
-        state.mark_key = mk
+        begin
+          %% write exec;
+        rescue => ex
+          state.error = ex
+        else
+          state.cursor = p
+          state.message = message
+          state.current_state = cs
+          state.mark = m
+          state.mark_key = mk
+        end
 
         nil
       end
@@ -95,6 +118,7 @@ module Stompede
       def initialize(buffer_size = 1024 * 1024, message_size = buffer_size)
         @buffer_size = buffer_size
         @message_size = message_size
+        @error = nil
 
         @cursor = 0
         @current_state = Stomp::Parser.start
@@ -109,6 +133,9 @@ module Stompede
       # @return [Integer] maximum message size for parsed messages
       attr_reader :message_size
 
+      # @return [StandardError] error raised during parsing
+      attr_accessor :error
+
       # @return [Integer] index of parsing cursor in data
       attr_accessor :cursor
 
@@ -118,16 +145,24 @@ module Stompede
       # @return [Stomp::Message] stomp message currently being parsed
       attr_accessor :message
 
-      # @return [Integer] index of parsing cursor in data
+      # @return [Integer] pointer to beginning of current buffer
       attr_accessor :mark
 
-      # @return [Integer] index of parsing cursor in data
+      # @return [String] header key currently being parsed
       attr_accessor :mark_key
 
-      # @return [Integer] index of parsing cursor in data
-      # @return [Integer] index of parsing cursor in data
+      # Parse a chunk of data. Retains state beteween invocations.
+      #
+      # @param [String] data
+      # @raise [ParseError]
       def parse(data)
-        Parser.parse(data, self)
+        if error
+          raise error
+        else
+          messages = []
+          Parser.parse(data, self) { |message| messages << message }
+          messages[0]
+        end
       end
     end
   end
