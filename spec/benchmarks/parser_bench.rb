@@ -1,4 +1,4 @@
-parser = Stompede::Stomp::Parser
+parser = Stompede::Stomp::Parser.new
 
 bench "Parser.parse minimal", "CONNECT\n\n\x00" do |message|
   parser.parse(message)

@@ -1,5 +1,5 @@
 describe Stompede::Stomp::Parser do
-  let(:parser) { Stompede::Stomp::Parser }
+  let(:parser) { Stompede::Stomp::Parser.new }
 
   context "a single message" do
     describe "parsing command" do
@@ -78,5 +78,13 @@ describe Stompede::Stomp::Parser do
     specify "message shorter than content-length", pending: "fixed length messages" do
       parser.parse("CONNECT\ncontent-length:2\n\nx\x00").should be_nil
     end
+  end
+
+  describe "failing on messages exceeding allowed size" do
+    specify "message containing a too large command"
+    specify "message containing a too large header key"
+    specify "message containing a too large header value"
+    specify "message containing a too large body"
+    specify "message total size too large"
   end
 end
