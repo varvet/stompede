@@ -57,7 +57,7 @@
 
   message = (command > mark_message) :> headers :> (dynamic_body @ finish_message);
 
-  stream := (EOL* :> message :> EOL*)+;
+  stream := (EOL | message)*;
 }%%
 
 module Stompede
