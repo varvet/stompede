@@ -88,10 +88,18 @@ module Stompede
         m = state.mark # pointer to marked character (for data buffering)
         mk = state.mark_key # key for header currently being read
 
-        begin
-          %% write exec;
-        rescue => ex
-          state.error = ex
+        %% write exec;
+
+        if cs == Stomp::Parser.error
+          # build error message context
+          ctx = 7
+          min = [0, p - ctx].max
+          cur = p - min
+          err = data.byteslice(min, ctx + 1 + ctx)
+          chr = err[cur]
+          err[cur] = " -->#{err[cur]}<-- "
+
+          raise ParseError.new("unexpected #{chr.inspect} in data (#{err.inspect})")
         else
           state.cursor = p
           state.message = message
@@ -158,12 +166,19 @@ module Stompede
       # @param [String] data
       # @raise [ParseError]
       def parse(data)
-        if error
-          raise error
-        else
+        raise error if error
+
+        begin
           Parser.parse(data, self) do |message|
             yield message
           end
+        rescue => error
+          self.error = error
+          raise
+        end
+
+        if current_state >= Stomp::Parser.first_final
+        else
         end
       end
     end

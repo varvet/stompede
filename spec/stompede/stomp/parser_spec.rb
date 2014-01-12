@@ -12,13 +12,15 @@ describe Stompede::Stomp::Parser do
 
     describe "multiple invocations" do
       it "parses simple split up messages" do
-        message = nil
-        parser.parse("CONNECT\n") { |m| message = m }
-        message.should be_nil
-        parser.parse("\n\x00") { |m| message = m }
-        message.should_not be_nil
-        message.command.should eq "CONNECT"
+        messages = parse_all("CONNECT\n")
+        messages.should be_empty
+
+        messages = parse_all("\n\x00")
+        messages.length.should eq(1)
+        messages[0].command.should eq "CONNECT"
       end
+
+      it "parses more complex split messages"
     end
 
     describe "parsing multiple messages" do
@@ -99,31 +101,45 @@ describe Stompede::Stomp::Parser do
 
     describe "failing on invalid messages" do
       specify "invalid command" do
-        parse_all("CONNET\n\n\x00").should be_empty
+        expect { parser.parse("CONNET\n\n\x00") }.to raise_error(Stompede::ParseError)
       end
 
       specify "unfinished command" do
-        parse_all("CONNECT\x00").should be_empty
-      end
-
-      specify "no end of headers" do
-        parse_all("CONNECT\n\x00").should be_empty
+        expect { parser.parse("CONNECT\x00") }.to raise_error(Stompede::ParseError)
       end
 
       specify "header with colon" do
-        parse_all("CONNECT\nfoo: :bar\n\n\x00").should be_empty
+        expect { parser.parse("CONNECT\nfoo: :bar\n\n\x00") }.to raise_error(Stompede::ParseError)
       end
 
       specify "header with invalid escape" do
-        parse_all("CONNECT\nfoo:\\t\n\n\x00").should be_empty
+        expect { parser.parse("CONNECT\nfoo:\\t\n\n\x00") }.to raise_error(Stompede::ParseError)
       end
 
       specify "message longer than content length", pending: "fixed length messages" do
-        parse_all("CONNECT\ncontent-length:0\n\nx\x00").should be_empty
+        expect { parser.parse("CONNECT\ncontent-length:0\n\nx\x00") }.to raise_error(Stompede::ParseError)
       end
 
       specify "message shorter than content-length", pending: "fixed length messages" do
-        parse_all("CONNECT\ncontent-length:2\n\nx\x00").should be_empty
+        expect { parser.parse("CONNECT\ncontent-length:2\n\nx\x00") }.to raise_error(Stompede::ParseError)
+      end
+
+      specify "failing after re-trying invocation after an error" do
+        first_error = begin
+          parser.parse("CONNET")
+        rescue Stompede::ParseError => ex
+          ex
+        end
+
+        first_error.should be_a(Stompede::ParseError)
+
+        second_error = begin
+          parser.parse("")
+        rescue Stompede::ParseError => ex
+          ex
+        end
+
+        second_error.should eql(first_error)
       end
     end
 
