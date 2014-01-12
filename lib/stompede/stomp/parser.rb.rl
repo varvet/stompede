@@ -55,7 +55,9 @@
 
   dynamic_body = (OCTET* > mark) % write_body :> NULL;
 
-  message := (command > mark_message) :> headers :> (dynamic_body @ finish_message);
+  message = (command > mark_message) :> headers :> (dynamic_body @ finish_message);
+
+  stream := (EOL* . message . EOL*)+;
 }%%
 
 module Stompede

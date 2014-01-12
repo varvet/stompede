@@ -10,6 +10,22 @@ describe Stompede::Stomp::Parser do
       messages
     end
 
+    describe "parsing multiple messages" do
+      it "yields multiple messages in a single invocation" do
+        messages = parse_all("CONNECT\n\n\x00CONNECT\n\n\x00CONNECT\n\n\x00")
+        messages.length.should eq(3)
+        messages.map(&:command).should eq %w[CONNECT CONNECT CONNECT]
+        messages.uniq.length.should eq(3)
+      end
+
+      it "allows newlines between messages" do
+        messages = parse_all("\n\r\n\nCONNECT\n\n\x00\n\n\r\nCONNECT\n\n\x00\n\n")
+        messages.length.should eq(2)
+        messages.map(&:command).should eq %w[CONNECT CONNECT]
+        messages.uniq.length.should eq(2)
+      end
+    end
+
     describe "parsing command" do
       it "can parse commands" do
         messages = parse_all("CONNECT\n\n\x00")
