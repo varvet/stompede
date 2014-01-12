@@ -8,11 +8,10 @@ namespace :ragel do
   desc "Build all ragel parsers"
   task :build => "lib/stompede/stomp/parser.rb"
 
-  desc "Delete all ragel-generated parsers"
-  task :clean do
-    FileList["**/*.rl"].each do |file|
-      rm_f file.sub(".rl", ".rb")
-    end
+  desc "Remove all ragel-generated parsers"
+  task :clean do |t|
+    source_tasks = Rake::Task["build"].all_prerequisite_tasks.select(&:source)
+    rm_f source_tasks.map(&:name)
   end
 
   desc "Show stomp parser state machine as an image"
