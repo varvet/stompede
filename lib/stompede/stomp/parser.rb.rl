@@ -159,9 +159,9 @@ module Stompede
         if error
           raise error
         else
-          messages = []
-          Parser.parse(data, self) { |message| messages << message }
-          messages[0]
+          Parser.parse(data, self) do |message|
+            yield message
+          end
         end
       end
     end

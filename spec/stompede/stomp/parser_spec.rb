@@ -1,90 +1,111 @@
 describe Stompede::Stomp::Parser do
   let(:parser) { Stompede::Stomp::Parser.new }
 
-  context "a single message" do
+  context "#parse" do
+    def parse_all(data)
+      messages = []
+      parser.parse(data) do |m|
+        messages << m
+      end
+      messages
+    end
+
     describe "parsing command" do
       it "can parse commands" do
-        message = parser.parse("CONNECT\n\n\x00")
-        message.command.should eq("CONNECT")
+        messages = parse_all("CONNECT\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].command.should eq("CONNECT")
       end
     end
 
     describe "parsing headers" do
       it "can parse simple headers" do
-        message = parser.parse("CONNECT\nmoo:cow\n\n\x00")
-        message.headers.should eq("moo" => "cow")
+        messages = parse_all("CONNECT\nmoo:cow\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].headers.should eq("moo" => "cow")
       end
 
       it "can parse multiple headers" do
-        message = parser.parse("CONNECT\nmoo:cow\nbaah:sheep\n\n\x00")
-        message.headers.should eq("moo" => "cow", "baah" => "sheep")
+        messages = parse_all("CONNECT\nmoo:cow\nbaah:sheep\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].headers.should eq("moo" => "cow", "baah" => "sheep")
       end
 
       it "can parse headers with NULLs in them" do
-        message = parser.parse("CONNECT\nnull\x00:null\x00\n\n\x00")
-        message.headers.should eq("null\x00" => "null\x00")
+        messages = parse_all("CONNECT\nnull\x00:null\x00\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].headers.should eq("null\x00" => "null\x00")
       end
 
       it "can parse headers with escape characters" do
-        message = parser.parse("CONNECT\nnull\\c:\\r\\n\\c\\\\\n\n\x00")
-        message.headers.should eq("null:" => "\r\n:\\")
+        messages = parse_all("CONNECT\nnull\\c:\\r\\n\\c\\\\\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].headers.should eq("null:" => "\r\n:\\")
       end
 
       it "can parse headers with no value" do
-        message = parser.parse("CONNECT\nmoo:\n\n\x00")
-        message.headers.should eq("moo" => "")
+        messages = parse_all("CONNECT\nmoo:\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].headers.should eq("moo" => "")
       end
 
       it "prioritises first header when given multiple of same key" do
-        message = parser.parse("CONNECT\nkey:first\nkey:second\n\n\x00")
-        message.headers.should eq("key" => "first")
+        messages = parse_all("CONNECT\nkey:first\nkey:second\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].headers.should eq("key" => "first")
       end
     end
 
     describe "parsing body" do
       it "can parse body" do
-        message = parser.parse("CONNECT\n\nbody\x00")
-        message.body.should eq "body"
+        messages = parse_all("CONNECT\n\nbody\x00")
+        messages.length.should eq(1)
+        messages[0].body.should eq "body"
       end
 
       it "can parse binary body", pending: "fixed length messages" do
-        message = parser.parse("CONNECT\ncontent-length:1\n\n\x00\x00")
-        message.body.should eq "body"
+        messages = parse_all("CONNECT\ncontent-length:1\n\n\x00\x00")
+        messages.length.should eq(1)
+        messages[0].body.should eq "body"
       end
     end
-  end
 
-  describe "failing on invalid messages" do
-    specify "unfinished command" do
-      parser.parse("CONNECT\x00").should be_nil
+    describe "failing on invalid messages" do
+      specify "invalid command" do
+        parse_all("CONNET\n\n\x00").should be_empty
+      end
+
+      specify "unfinished command" do
+        parse_all("CONNECT\x00").should be_empty
+      end
+
+      specify "no end of headers" do
+        parse_all("CONNECT\n\x00").should be_empty
+      end
+
+      specify "header with colon" do
+        parse_all("CONNECT\nfoo: :bar\n\n\x00").should be_empty
+      end
+
+      specify "header with invalid escape" do
+        parse_all("CONNECT\nfoo:\\t\n\n\x00").should be_empty
+      end
+
+      specify "message longer than content length", pending: "fixed length messages" do
+        parse_all("CONNECT\ncontent-length:0\n\nx\x00").should be_empty
+      end
+
+      specify "message shorter than content-length", pending: "fixed length messages" do
+        parse_all("CONNECT\ncontent-length:2\n\nx\x00").should be_empty
+      end
     end
 
-    specify "no end of headers" do
-      parser.parse("CONNECT\n\x00").should be_nil
+    describe "failing on messages exceeding allowed size" do
+      specify "message containing a too large command"
+      specify "message containing a too large header key"
+      specify "message containing a too large header value"
+      specify "message containing a too large body"
+      specify "message total size too large"
     end
-
-    specify "header with colon" do
-      parser.parse("CONNECT\nfoo: :bar\n\n\x00").should be_nil
-    end
-
-    specify "header with invalid escape" do
-      parser.parse("CONNECT\nfoo:\\t\n\n\x00").should be_nil
-    end
-
-    specify "message longer than content length", pending: "fixed length messages" do
-      parser.parse("CONNECT\ncontent-length:0\n\nx\x00").should be_nil
-    end
-
-    specify "message shorter than content-length", pending: "fixed length messages" do
-      parser.parse("CONNECT\ncontent-length:2\n\nx\x00").should be_nil
-    end
-  end
-
-  describe "failing on messages exceeding allowed size" do
-    specify "message containing a too large command"
-    specify "message containing a too large header key"
-    specify "message containing a too large header value"
-    specify "message containing a too large body"
-    specify "message total size too large"
   end
 end
