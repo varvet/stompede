@@ -1,16 +1,16 @@
 %%{
   machine message;
 
-  getkey data[p].ord; # code for retrieving current char (default)
+  getkey data.getbyte(p); # code for retrieving current char
 
   # data, p, pe, eof, cs, top, stack, ts, te and act
 
   action mark { m = p }
-  action mark_key { mk = data[m...p] }
+  action mark_key { mk = data.byteslice(m, p) }
 
-  action write_command { message.write_command(data[m...p]) }
-  action write_header { message.write_header(mk, data[m...p]) }
-  action write_body { message.write_body(data[m...p]) }
+  action write_command { message.write_command(data.byteslice(m, p)) }
+  action write_header { message.write_header(mk, data.byteslice(m, p)) }
+  action write_body { message.write_body(data.byteslice(m, p)) }
 
   action init_message {
     message = Stomp::Message.new
@@ -127,7 +127,7 @@ module Stompede
       # @return [Integer] index of parsing cursor in data
       # @return [Integer] index of parsing cursor in data
       def parse(data)
-        Parser.parse(data.force_encoding("BINARY"), self)
+        Parser.parse(data, self)
       end
     end
   end
