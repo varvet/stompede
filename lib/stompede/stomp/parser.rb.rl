@@ -176,10 +176,6 @@ module Stompede
           self.error = error
           raise
         end
-
-        if current_state >= Stomp::Parser.first_final
-        else
-        end
       end
     end
   end

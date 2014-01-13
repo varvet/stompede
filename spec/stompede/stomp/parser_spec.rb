@@ -21,7 +21,7 @@ describe Stompede::Stomp::Parser do
       end
 
       it "parses messages split across buffer markings", pending: "buffering between invocations" do
-        messages = parse_all("CONN")
+        messages = parse_all("\n\nCONN")
         messages.should be_empty
 
         messages = parse_all("ECT\n\x00")

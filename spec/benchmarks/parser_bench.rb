@@ -1,7 +1,18 @@
-$parser = Stompede::Stomp::Parser.new
+def parse_one(data)
+  message = nil
+  parser = Stompede::Stomp::Parser.new
+  parser.parse(data) { |m| message = m }
+  message
+end
 
-def parse_one(message)
-  $parser.parse(message) { |m| return m }
+def parse_one_invalid(data)
+  begin
+    parse_one(data)
+  rescue Stompede::ParseError
+    true
+  else
+    false
+  end
 end
 
 bench "Parser.parse minimal", "CONNECT\n\n\x00" do |message|
@@ -20,6 +31,14 @@ bench "Parser.parse with headers and small body", "CONNECT\nheart-beat:0,0\n\nbo
   parse_one(message)
 end
 
-bench "Parser.parse with invalid contents", "CONNECT" do |message|
-  parse_one(message) == nil
+bench "Parser.parse with invalid command", "CONNET\n\n\x00" do |message|
+  parse_one_invalid(message)
+end
+
+bench "Parser.parse with invalid header contents", "CONNECT\nheart::beat\n\x00" do |message|
+  parse_one_invalid(message)
+end
+
+bench "Parser.parse with stray null after message", "CONNECT\n\n\x00\x00" do |message|
+  parse_one_invalid(message)
 end
