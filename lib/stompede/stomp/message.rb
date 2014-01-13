@@ -21,21 +21,36 @@ module Stompede
       # @return [String]
       attr_reader :body
 
+      # Construct a message from a command, optional headers, and a body.
+      #
+      # @param [String] command
+      # @param [Hash<String, String>] headers
+      # @param [String] body
       def initialize(command, headers = {}, body)
         @command = command || EMPTY
         @headers = headers
         @body = body || EMPTY
       end
 
+      # Change the command of this message.
+      #
+      # @param [String] command
       def write_command(command)
         @command = command
       end
 
+      # Write a single header to this message.
+      #
+      # @param [String] key
+      # @param [String] value
       def write_header(key, value)
         # @see http://stomp.github.io/stomp-specification-1.2.html#Repeated_Header_Entries
         @headers[translate_header(key)] ||= translate_header(value)
       end
 
+      # Write the body to this message.
+      #
+      # @param [String] body
       def write_body(body)
         @body = body
       end
@@ -66,6 +81,7 @@ module Stompede
         value.gsub(HEADER_TRANSLATIONS_KEYS, HEADER_TRANSLATIONS)
       end
 
+      # inverse of #translate_header
       def serialize_header(value)
         value.gsub(HEADER_REVERSE_TRANSLATIONS_KEYS, HEADER_REVERSE_TRANSLATIONS)
       end
