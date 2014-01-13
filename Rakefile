@@ -1,5 +1,8 @@
 require "bundler/gem_tasks"
 
+# Build state machine before building gem.
+task :build => "ragel:build"
+
 rule ".rb" => ".rb.rl" do |t|
   sh "ragel", "-F1", "-R", t.source, "-o", t.name
 end
@@ -20,8 +23,6 @@ namespace :ragel do
     sh "ragel -V -p #{ragel.source} | dot -Tpng | open -a Preview -f"
   end
 end
-
-task :build => "ragel:build"
 
 desc "Start a pry session with the gem loaded."
 task :console => "ragel:build" do
