@@ -34,9 +34,9 @@ task :spec => "ragel:build" do
   sh "rspec"
 end
 
-desc "Run the benchmarks."
+desc "Run all benchmarks."
 task :bench => "ragel:build" do
-  sh "ruby", "spec/bench_helper.rb"
+  sh "ruby", "-I.", *FileList["spec/benchmarks/**/*.rb"].flat_map { |x| ["-r", x] }, "-e", "''"
 end
 
 task :default => :spec
