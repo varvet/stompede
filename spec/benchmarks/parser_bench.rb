@@ -1,3 +1,5 @@
+require_relative "../bench_helper"
+
 def parse_one(data)
   message = nil
   parser = Stompede::Stomp::Parser.new

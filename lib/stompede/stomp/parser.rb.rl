@@ -14,7 +14,7 @@
     mk = buffer # needs reset
     m = buffer = nil
   }
-  action mark_message { message = Stomp::Message.new }
+  action mark_message { message = Stomp::Message.new(nil, nil) }
 
   ## Action commands - should reset used state!
   action write_command {

@@ -23,7 +23,3 @@ at_exit do
     end
   end
 end
-
-Dir["./**/*_bench.rb"].each do |benchmark|
-  require benchmark
-end

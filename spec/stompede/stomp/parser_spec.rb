@@ -39,6 +39,16 @@ describe Stompede::Stomp::Parser do
         messages[0].headers.should eq("header" => "value")
       end
 
+      it "parses binary message split across body", pending: "fixed length messages" do
+        messages = parse_all("CONNECT\ncontent-length:4\n\n\x00a")
+        messages.should be_empty
+
+        messages = parse_all("b\x00\x00")
+        messages.length.should eq(1)
+        messages[0].command.should eq "CONNECT"
+        messages[0].body.should eq("\x00ab\x00")
+      end
+
       it "parses messages split across messages" do
         messages = parse_all("CONNECT\n")
         messages.should be_empty
