@@ -9,7 +9,10 @@
     m = p
     buffer = "".force_encoding("BINARY")
   }
-  action buffer { buffer << fc }
+  action buffer {
+    buffer << fc
+    raise BufferLimitExceeded if buffer.bytesize > buffer_size
+  }
   action mark_key {
     mk = buffer # needs reset
     m = buffer = nil
@@ -91,6 +94,7 @@ module Stompede
         m = state.mark # pointer to marked character (for data buffering)
         mk = state.mark_key # key for header currently being read
         buffer = state.buffer # buffered data for marks
+        buffer_size = state.buffer_size
 
         %% write exec;
 
