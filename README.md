@@ -19,7 +19,7 @@ TODO: Write usage instructions here.
 
 Development should be ez.
 
-```
+``` bash
 git clone git@github.com:Burgestrand/stompede.git # git, http://git-scm.com/
 cd stompede
 brew bundle # Homebrew, http://brew.sh/
