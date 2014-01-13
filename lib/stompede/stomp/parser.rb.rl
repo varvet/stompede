@@ -4,29 +4,32 @@
   # data, p, pe, eof, cs, top, stack, ts, te and act
   getkey data.getbyte(p); # code for retrieving current char
 
-
   ## Action state - needs resetting once consumed!
-  action mark { m = p }
+  action mark {
+    m = p
+    buffer = "".force_encoding("BINARY")
+  }
+  action buffer { buffer << fc }
   action mark_key {
-    mk = data.byteslice(m, p - m) # needs reset
-    m = nil
+    mk = buffer # needs reset
+    m = buffer = nil
   }
   action mark_message { message = Stomp::Message.new }
 
   ## Action commands - should reset used state!
   action write_command {
-    message.write_command(data.byteslice(m, p - m))
-    m = nil
+    message.write_command(buffer)
+    m = buffer = nil
   }
 
   action write_header {
-    message.write_header(mk, data.byteslice(m, p - m))
-    m = mk = nil
+    message.write_header(mk, buffer)
+    m = mk = buffer = nil
   }
 
   action write_body {
-    message.write_body(data.byteslice(m, p - m))
-    m = nil
+    message.write_body(buffer)
+    m = buffer = nil
   }
 
   action finish_headers {
@@ -44,16 +47,16 @@
   OCTET = any;
 
   client_command = "CONNECT" > mark;
-  command = client_command % write_command . EOL;
+  command = client_command $ buffer % write_command . EOL;
 
   HEADER_ESCAPE = "\\" . ("\\" | "n" | "r" | "c");
   HEADER_OCTET = HEADER_ESCAPE | (OCTET - "\r" - "\n" - "\\" - ":");
-  header_key = HEADER_OCTET+ > mark % mark_key;
-  header_value = HEADER_OCTET* > mark;
+  header_key = HEADER_OCTET+ > mark $ buffer % mark_key;
+  header_value = HEADER_OCTET* > mark $ buffer;
   header = header_key . ":" . header_value;
   headers = (header % write_header . EOL)* % finish_headers . EOL;
 
-  dynamic_body = (OCTET* > mark) % write_body :> NULL;
+  dynamic_body = (OCTET* > mark) $ buffer % write_body :> NULL;
 
   message = (command > mark_message) :> headers :> (dynamic_body @ finish_message);
 
@@ -87,6 +90,7 @@ module Stompede
         cs = state.current_state # current state
         m = state.mark # pointer to marked character (for data buffering)
         mk = state.mark_key # key for header currently being read
+        buffer = state.buffer # buffered data for marks
 
         %% write exec;
 
@@ -101,11 +105,11 @@ module Stompede
 
           raise ParseError.new("unexpected #{chr.inspect} in data (#{err.inspect})")
         else
-          state.cursor = p
           state.message = message
           state.current_state = cs
           state.mark = m
           state.mark_key = mk
+          state.buffer = buffer
         end
 
         nil
@@ -129,8 +133,8 @@ module Stompede
         @buffer_size = buffer_size
         @message_size = message_size
         @error = nil
+        @buffer = nil
 
-        @cursor = 0
         @current_state = Stomp::Parser.start
         @message = nil
         @mark = nil
@@ -146,8 +150,8 @@ module Stompede
       # @return [StandardError] error raised during parsing
       attr_accessor :error
 
-      # @return [Integer] index of parsing cursor in data
-      attr_accessor :cursor
+      # @return [String] binary string of current parsing buffer
+      attr_accessor :buffer
 
       # @return [Integer] current parsing state
       attr_accessor :current_state

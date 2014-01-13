@@ -20,26 +20,26 @@ describe Stompede::Stomp::Parser do
         messages[0].command.should eq "CONNECT"
       end
 
-      it "parses messages split across buffer markings", pending: "buffering between invocations" do
+      it "parses messages split across buffer markings" do
         messages = parse_all("\n\nCONN")
         messages.should be_empty
 
-        messages = parse_all("ECT\n\x00")
+        messages = parse_all("ECT\n\n\x00")
         messages.length.should eq(1)
         messages[0].command.should eq "CONNECT"
       end
 
-      it "parses messages split across header keys", pending: "buffering between invocations" do
+      it "parses messages split across header keys" do
         messages = parse_all("CONNECT\nheader:")
         messages.should be_empty
 
-        messages = parse_all("value\n\x00")
+        messages = parse_all("value\n\n\x00")
         messages.length.should eq(1)
         messages[0].command.should eq "CONNECT"
         messages[0].headers.should eq("header" => "value")
       end
 
-      it "parses messages split across messages", pending: "buffering between invocations" do
+      it "parses messages split across messages" do
         messages = parse_all("CONNECT\n")
         messages.should be_empty
 
