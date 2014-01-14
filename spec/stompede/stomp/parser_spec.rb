@@ -39,7 +39,7 @@ describe Stompede::Stomp::Parser do
         messages[0].headers.should eq("header" => "value")
       end
 
-      it "parses binary message split across body", pending: "fixed length messages" do
+      it "parses binary message split across body" do
         messages = parse_all("CONNECT\ncontent-length:4\n\n\x00a")
         messages.should be_empty
 
@@ -132,10 +132,10 @@ describe Stompede::Stomp::Parser do
         messages[0].body.should eq "body"
       end
 
-      it "can parse binary body", pending: "fixed length messages" do
-        messages = parse_all("CONNECT\ncontent-length:1\n\n\x00\x00")
+      it "can parse binary body" do
+        messages = parse_all("CONNECT\ncontent-length:5\n\nbo\x00dy\x00")
         messages.length.should eq(1)
-        messages[0].body.should eq "body"
+        messages[0].body.should eq "bo\x00dy"
       end
     end
 
@@ -156,12 +156,8 @@ describe Stompede::Stomp::Parser do
         expect { parser.parse("CONNECT\nfoo:\\t\n\n\x00") }.to raise_error(Stompede::ParseError)
       end
 
-      specify "message longer than content length", pending: "fixed length messages" do
+      specify "message longer than content length" do
         expect { parser.parse("CONNECT\ncontent-length:0\n\nx\x00") }.to raise_error(Stompede::ParseError)
-      end
-
-      specify "message shorter than content-length", pending: "fixed length messages" do
-        expect { parser.parse("CONNECT\ncontent-length:2\n\nx\x00") }.to raise_error(Stompede::ParseError)
       end
 
       specify "failing after re-trying invocation after an error" do

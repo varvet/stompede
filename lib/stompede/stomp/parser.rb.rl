@@ -35,6 +35,17 @@
   }
 
   action finish_headers {
+    if message.headers.has_key?("content-length")
+      content_length = Integer(message.headers["content-length"])
+    end
+  }
+
+  action dynamic_body {
+    content_length.nil?
+  }
+
+  action more_fixed_body {
+    buffer.length < content_length if content_length
   }
 
   action finish_message {
@@ -58,9 +69,9 @@
   header = header_key . ":" . header_value;
   headers = (header % write_header . EOL)* % finish_headers . EOL;
 
-  dynamic_body = (OCTET* > mark) $ buffer % write_body :> NULL;
+  body = ((^NULL when dynamic_body | OCTET when more_fixed_body)* $ buffer)** % write_body . NULL;
 
-  message = (command > mark_message) :> headers :> (dynamic_body @ finish_message);
+  message = (command > mark_message) :> headers @ mark :> (body @ finish_message);
 
   stream := (EOL | message)*;
 }%%
@@ -93,6 +104,7 @@ module Stompede
         mk = state.mark_key # key for header currently being read
         buffer = state.buffer # buffered data for marks
         buffer_size = state.buffer_size
+        content_length = state.content_length
 
         %% write exec;
 
@@ -111,6 +123,7 @@ module Stompede
           state.current_state = cs
           state.mark_key = mk
           state.buffer = buffer
+          state.content_length = content_length
         end
 
         nil
@@ -152,6 +165,9 @@ module Stompede
 
       # @return [String] binary string of current parsing buffer
       attr_accessor :buffer
+
+      # @return [Integer, nil]
+      attr_accessor :content_length
 
       # @return [Integer] current parsing state
       attr_accessor :current_state
