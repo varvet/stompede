@@ -69,7 +69,7 @@
   header = header_key . ":" . header_value;
   headers = (header % write_header . EOL)* % finish_headers . EOL;
 
-  body = ((^NULL when dynamic_body | OCTET when more_fixed_body)* $ buffer)** % write_body . NULL;
+  body = ((^NULL when dynamic_body | OCTET when more_fixed_body)* $ buffer) % write_body <: NULL;
 
   message = (command > mark_message) :> headers @ mark :> (body @ finish_message);
 
