@@ -6,7 +6,6 @@
 
   ## Action state - needs resetting once consumed!
   action mark {
-    m = p
     buffer = "".force_encoding("BINARY")
   }
   action buffer {
@@ -15,24 +14,24 @@
   }
   action mark_key {
     mk = buffer # needs reset
-    m = buffer = nil
+    buffer = nil
   }
   action mark_message { message = Stomp::Message.new(nil, nil) }
 
   ## Action commands - should reset used state!
   action write_command {
     message.write_command(buffer)
-    m = buffer = nil
+    buffer = nil
   }
 
   action write_header {
     message.write_header(mk, buffer)
-    m = mk = buffer = nil
+    mk = buffer = nil
   }
 
   action write_body {
     message.write_body(buffer)
-    m = buffer = nil
+    buffer = nil
   }
 
   action finish_headers {
@@ -91,7 +90,6 @@ module Stompede
         p = 0 # pointer to current character
         message = state.message # message currently being parsed, if any
         cs = state.current_state # current state
-        m = state.mark # pointer to marked character (for data buffering)
         mk = state.mark_key # key for header currently being read
         buffer = state.buffer # buffered data for marks
         buffer_size = state.buffer_size
@@ -111,7 +109,6 @@ module Stompede
         else
           state.message = message
           state.current_state = cs
-          state.mark = m
           state.mark_key = mk
           state.buffer = buffer
         end
@@ -141,7 +138,6 @@ module Stompede
 
         @current_state = Stomp::Parser.start
         @message = nil
-        @mark = nil
         @mark_key = nil
       end
 
@@ -162,9 +158,6 @@ module Stompede
 
       # @return [Stomp::Message] stomp message currently being parsed
       attr_accessor :message
-
-      # @return [Integer] pointer to beginning of current buffer
-      attr_accessor :mark
 
       # @return [String] header key currently being parsed
       attr_accessor :mark_key
