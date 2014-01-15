@@ -11,7 +11,7 @@ bench "Parser.parse minimal", "CONNECT\n\n\x00" do |message|
   parse_one(message)
 end
 
-bench "Parser.parse with headers", "CONNECT\nheart-beat:0,0\n\n\x00" do |message|
+bench "Parser.parse with headers", "CONNECT\ncontent-length:0\n\n\x00" do |message|
   parse_one(message)
 end
 
@@ -19,6 +19,16 @@ bench "Parser.parse with small body", "CONNECT\n\nbody\x00" do |message|
   parse_one(message)
 end
 
-bench "Parser.parse with headers and small body", "CONNECT\nheart-beat:0,0\n\nbody\x00" do |message|
+bench "Parser.parse with headers and small body", "CONNECT\ncontent-length:4\n\nbody\x00" do |message|
+  parse_one(message)
+end
+
+large_body = "b" * (Stompede::Stomp::Parser.max_message_size - 50) # make room for headers
+bench "Parser.parse with large body", "CONNECT\n\n#{large_body}\x00" do |message|
+  parse_one(message)
+end
+
+large_binary = "b\x00" * ((Stompede::Stomp::Parser.max_message_size / 2) - 50) # make room for headers
+bench "Parser.parse with headers and large body", "CONNECT\ncontent-length:#{large_binary.bytesize}\n\n#{large_binary}\x00" do |message|
   parse_one(message)
 end
