@@ -183,30 +183,35 @@ describe Stompede::Stomp::Parser do
       let(:parser) {  }
 
       specify "message containing a too large command" do
-        parser = Stompede::Stomp::Parser.new(4)
+        Stompede::Stomp::Parser.stub(max_buffer_size: 4)
+        parser = Stompede::Stomp::Parser.new
         expect { parser.parse("CONNECT\n\n\x00") }.to raise_error(Stompede::BufferLimitExceeded)
       end
 
       specify "message containing a too large header key" do
-        parser = Stompede::Stomp::Parser.new(10)
+        Stompede::Stomp::Parser.stub(max_buffer_size: 10)
+        parser = Stompede::Stomp::Parser.new
         parser.parse("CONNECT\n")
         expect { parser.parse("very-long-header:value\n\n\x00") }.to raise_error(Stompede::BufferLimitExceeded)
       end
 
       specify "message containing a too large header value" do
-        parser = Stompede::Stomp::Parser.new(10)
+        Stompede::Stomp::Parser.stub(max_buffer_size: 10)
+        parser = Stompede::Stomp::Parser.new
         parser.parse("CONNECT\n")
         expect { parser.parse("key:very-long-header\n\n\x00") }.to raise_error(Stompede::BufferLimitExceeded)
       end
 
       specify "message containing a too large body" do
-        parser = Stompede::Stomp::Parser.new(10)
+        Stompede::Stomp::Parser.stub(max_buffer_size: 10)
+        parser = Stompede::Stomp::Parser.new
         parser.parse("CONNECT\n\n")
         expect { parser.parse("a very long body\x00") }.to raise_error(Stompede::BufferLimitExceeded)
       end
 
       specify "message total size too large", pending: "total size limit" do
-        parser = Stompede::Stomp::Parser.new(30, 30)
+        Stompede::Stomp::Parser.stub(max_buffer_size: 30, max_message_size: 30)
+        parser = Stompede::Stomp::Parser.new
         parser.parse("CONNECT\n") # 8
         parser.parse("header:value\n") # 21
         expect { parser.parse("other:val\n") }.to raise_error(Stompede::MessageSizeExceeded)

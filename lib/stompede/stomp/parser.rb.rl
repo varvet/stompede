@@ -10,7 +10,7 @@
   }
   action buffer {
     buffer << fc
-    raise BufferLimitExceeded if buffer.bytesize > buffer_size
+    raise BufferLimitExceeded if buffer.bytesize > max_buffer_size
   }
   action mark_key {
     mk = buffer # needs reset
@@ -89,6 +89,18 @@ module Stompede
       # bust our ruby method caching
       %% write data noprefix;
 
+      class << self
+        # @note the message buffer stores values for commands, header key, header value and message body.
+        # @attr [Integer] maximum size for the message buffer.
+        attr_accessor :max_buffer_size
+
+        # @attr [Integer] maximum size (in bytes) a message may become before raising MessageSizeExceeded.
+        attr_accessor :max_message_size
+      end
+
+      self.max_buffer_size = 1024 # 1KB
+      self.max_message_size = 1024 * 100 # 100KB
+
       # Parse a chunk of Stomp-formatted data into a Message.
       #
       # @param [String] data
@@ -103,7 +115,6 @@ module Stompede
         cs = state.current_state # current state
         mk = state.mark_key # key for header currently being read
         buffer = state.buffer # buffered data for marks
-        buffer_size = state.buffer_size
         content_length = state.content_length
 
         %% write exec;
@@ -129,23 +140,7 @@ module Stompede
         nil
       end
 
-      # Construct the parser.
-      #
-      # The buffer_size parameter determines how big the largest
-      # chunk of data may become. This includes commands, header
-      # keys, header values, and the body. If this size is reached,
-      # the parser will throw a #{BufferLimitExceeded} error.
-      #
-      # The message_size parameter determines how big the largest
-      # message may become. This includes all of the content in the
-      # message being parsed. If this size is reached for an individual
-      # message, the parser will throw a #{MessageSizeExceeded} error.
-      #
-      # @param [Integer] buffer_size (10K) maximum buffer size
-      # @param [Integer] message_size (buffer_size) maximum message size
-      def initialize(buffer_size = 1024 * 1024, message_size = buffer_size)
-        @buffer_size = buffer_size
-        @message_size = message_size
+      def initialize
         @error = nil
         @buffer = nil
 
@@ -154,11 +149,6 @@ module Stompede
         @mark_key = nil
       end
 
-      # @return [Integer] maximum buffer size for parsed values
-      attr_reader :buffer_size
-
-      # @return [Integer] maximum message size for parsed messages
-      attr_reader :message_size
 
       # @return [StandardError] error raised during parsing
       attr_accessor :error
