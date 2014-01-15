@@ -47,12 +47,12 @@
   }
 
   action consume_null {
-    buffer.length < content_length if content_length
+    buffer.bytesize < content_length if content_length
   }
 
   action consume_octet {
     if content_length
-      buffer.length < content_length
+      buffer.bytesize < content_length
     else
       true
     end
@@ -120,8 +120,8 @@ module Stompede
         cs = state.current_state # current state
         mk = state.mark_key # key for header currently being read
         buffer = state.buffer # buffered data for marks
-        message_size = state.message_size
-        content_length = state.content_length
+        message_size = state.message_size # how many bytes current message contains in total
+        content_length = state.content_length # content length of current message
 
         %% write exec;
 
