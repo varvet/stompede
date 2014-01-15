@@ -178,12 +178,24 @@ describe Stompede::Stomp::Parser do
         second_error.should eql(first_error)
       end
 
-      specify "total message size being too large" do
+      specify "total message size being too large with content-size" do
         Stompede::Stomp::Parser.stub(max_message_size: 30)
         parser = Stompede::Stomp::Parser.new
         parser.parse("CONNECT\n") # 8
         parser.parse("header:value\n") # 21
-        expect { parser.parse("other:val\n") }.to raise_error(Stompede::MessageSizeExceeded)
+        expect {
+          parser.parse("other:val\n") # 31
+        }.to raise_error(Stompede::MessageSizeExceeded)
+      end
+
+      specify "message size being too large without content-size" do
+        Stompede::Stomp::Parser.stub(max_message_size: 30)
+        parser = Stompede::Stomp::Parser.new
+        parser.parse("CONNECT\n") # 8
+        parser.parse("content-size:30\n") # 24
+        expect {
+          parser.parse("hi:hoy\n") # 31
+        }.to raise_error(Stompede::MessageSizeExceeded)
       end
     end
   end

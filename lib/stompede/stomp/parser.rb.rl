@@ -17,8 +17,6 @@
   }
   action mark_message {
     message = Stomp::Message.new(nil, nil)
-  }
-  action init_message_size {
     message_size = 0
   }
   action check_message_size {
@@ -48,12 +46,16 @@
     end
   }
 
-  action dynamic_body {
-    content_length.nil?
+  action consume_null {
+    buffer.length < content_length if content_length
   }
 
-  action more_fixed_body {
-    buffer.length < content_length if content_length
+  action consume_octet {
+    if content_length
+      buffer.length < content_length
+    else
+      true
+    end
   }
 
   action finish_message {
@@ -77,9 +79,9 @@
   header = header_key . ":" . header_value;
   headers = (header % write_header . EOL)* % finish_headers . EOL;
 
-  body = ((^NULL when dynamic_body | OCTET when more_fixed_body)* $ buffer) % write_body <: NULL;
+  body = ((NULL when consume_null | ^NULL when consume_octet)* $ buffer) >to(mark) % write_body <: NULL;
 
-  message = ((command > mark_message) :> headers @ mark :> (body @ finish_message)) > init_message_size $ check_message_size;
+  message = ((command > mark_message) :> headers :> (body @ finish_message)) $ check_message_size;
 
   stream := (EOL | message)*;
 }%%
@@ -155,11 +157,11 @@ module Stompede
         @mark_key = nil
       end
 
-      # @return [Integer] message size accumulated so far
-      attr_accessor :message_size
-
       # @return [StandardError] error raised during parsing
       attr_accessor :error
+
+      # @return [Integer] message size accumulated so far
+      attr_accessor :message_size
 
       # @return [String] binary string of current parsing buffer
       attr_accessor :buffer
