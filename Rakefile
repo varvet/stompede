@@ -39,4 +39,11 @@ task :bench => "ragel:build" do
   sh "ruby", "-I.", *FileList["spec/benchmarks/**/*.rb"].flat_map { |x| ["-r", x] }, "-e", "''"
 end
 
+desc "Run the profiler and show a gif!"
+task :profile => "ragel:build" do
+  sh "ruby", "spec/profile.rb"
+  sh "CPUPROFILE_METHODS=0 CPUPROFILE_OBJECTS=0 CPUPROFILE_REALTIME=0 pprof.rb --gif spec/profile/parser.profile > spec/profile/parser.gif"
+  sh "open spec/profile/parser.gif"
+end
+
 task :default => :spec
