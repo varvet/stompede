@@ -6,7 +6,7 @@
 
   ## Action state - needs resetting once consumed!
   action mark {
-    buffer = "".force_encoding("BINARY")
+    buffer = EMPTY_BUFFER.dup
   }
   action buffer {
     buffer << fc
@@ -104,6 +104,7 @@ module Stompede
         attr_accessor :max_message_size
       end
 
+      EMPTY_BUFFER = "".force_encoding("BINARY").freeze
       self.max_message_size = 1024 * 100 # 100KB
 
       # Parse a chunk of Stomp-formatted data into a Message.
