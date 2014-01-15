@@ -113,7 +113,6 @@ module Stompede
       # @return [Stomp::Message, nil]
       def self.parse(data, state)
         pe = data.bytesize # end of chunk
-        eof = :ignored # end of input
 
         p = 0 # pointer to current character
         message = state.message # message currently being parsed, if any
