@@ -10,7 +10,6 @@
   }
   action buffer {
     buffer << fc
-    raise BufferLimitExceeded if buffer.bytesize > max_buffer_size
   }
   action mark_key {
     mk = buffer # needs reset
@@ -99,15 +98,10 @@ module Stompede
       %% write data noprefix;
 
       class << self
-        # @note the message buffer stores values for commands, header key, header value and message body.
-        # @attr [Integer] maximum size for the message buffer.
-        attr_accessor :max_buffer_size
-
         # @attr [Integer] maximum size (in bytes) a message may become before raising MessageSizeExceeded.
         attr_accessor :max_message_size
       end
 
-      self.max_buffer_size = 1024 # 1KB
       self.max_message_size = 1024 * 100 # 100KB
 
       # Parse a chunk of Stomp-formatted data into a Message.
@@ -156,7 +150,6 @@ module Stompede
         @error = nil
         @buffer = nil
         @message_size = nil
-
         @current_state = Stomp::Parser.start
         @message = nil
         @mark_key = nil
