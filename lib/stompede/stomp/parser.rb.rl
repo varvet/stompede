@@ -16,7 +16,16 @@
     mk = buffer # needs reset
     buffer = nil
   }
-  action mark_message { message = Stomp::Message.new(nil, nil) }
+  action mark_message {
+    message = Stomp::Message.new(nil, nil)
+  }
+  action init_message_size {
+    message_size = 0
+  }
+  action check_message_size {
+    message_size += 1
+    raise MessageSizeExceeded if message_size > max_message_size
+  }
 
   ## Action commands - should reset used state!
   action write_command {
@@ -71,7 +80,7 @@
 
   body = ((^NULL when dynamic_body | OCTET when more_fixed_body)* $ buffer) % write_body <: NULL;
 
-  message = (command > mark_message) :> headers @ mark :> (body @ finish_message);
+  message = ((command > mark_message) :> headers @ mark :> (body @ finish_message)) > init_message_size $ check_message_size;
 
   stream := (EOL | message)*;
 }%%
@@ -115,6 +124,7 @@ module Stompede
         cs = state.current_state # current state
         mk = state.mark_key # key for header currently being read
         buffer = state.buffer # buffered data for marks
+        message_size = state.message_size
         content_length = state.content_length
 
         %% write exec;
@@ -134,21 +144,26 @@ module Stompede
           state.current_state = cs
           state.mark_key = mk
           state.buffer = buffer
+          state.message_size = message_size
           state.content_length = content_length
         end
 
         nil
       end
 
+      # Construct the parser.
       def initialize
         @error = nil
         @buffer = nil
+        @message_size = nil
 
         @current_state = Stomp::Parser.start
         @message = nil
         @mark_key = nil
       end
 
+      # @return [Integer] message size accumulated so far
+      attr_accessor :message_size
 
       # @return [StandardError] error raised during parsing
       attr_accessor :error

@@ -209,7 +209,7 @@ describe Stompede::Stomp::Parser do
         expect { parser.parse("a very long body\x00") }.to raise_error(Stompede::BufferLimitExceeded)
       end
 
-      specify "message total size too large", pending: "total size limit" do
+      specify "message total size too large" do
         Stompede::Stomp::Parser.stub(max_buffer_size: 30, max_message_size: 30)
         parser = Stompede::Stomp::Parser.new
         parser.parse("CONNECT\n") # 8
