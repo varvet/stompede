@@ -3,7 +3,7 @@ source 'https://rubygems.org'
 gemspec
 
 gem "pry"
-gem "perftools.rb", git: "git@github.com:tmm1/perftools.rb.git"
+gem "perftools.rb", github: "tmm1/perftools.rb"
 
 platforms :rbx do
   gem "rb-readline"
