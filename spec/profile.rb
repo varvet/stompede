@@ -3,7 +3,7 @@ require "stompede"
 require "perftools"
 
 parser = Stompede::Stomp::Parser.new
-body_size = 10
+body_size = (1024 * 99) / 2
 large_binary = "b\x00" * body_size # make room for headers
 data = <<-MESSAGE
 CONNECT
@@ -15,7 +15,7 @@ stream = data + data + data + data
 
 profile_output = File.expand_path("./profile/parser.profile", File.dirname(__FILE__))
 PerfTools::CpuProfiler.start(profile_output) do
-  i = 10_000
+  i = 100
   loop do
     parser.parse(data) do |message|
       # no op

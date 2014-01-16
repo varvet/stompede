@@ -41,9 +41,9 @@ end
 
 desc "Run the profiler and show a gif, requires perftools.rb"
 task :profile => "ragel:build" do
-  sh "ruby", "spec/profile.rb"
-  sh "CPUPROFILE_METHODS=0 CPUPROFILE_OBJECTS=0 CPUPROFILE_REALTIME=0 pprof.rb --gif spec/profile/parser.profile > spec/profile/parser.gif"
-  sh "open spec/profile/parser.gif"
+  # CPUPROFILE_METHODS=0 CPUPROFILE_OBJECTS=0 CPUPROFILE_REALTIME=1
+  sh "CPUPROFILE_REALTIME=1 ruby spec/profile.rb"
+  sh "pprof.rb --text spec/profile/parser.profile"
 end
 
 task :default => :spec
