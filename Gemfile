@@ -4,6 +4,7 @@ gemspec
 
 gem "pry"
 gem "perftools.rb"
+gem "benchmark-ips"
 
 platforms :rbx do
   gem "rb-readline"
