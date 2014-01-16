@@ -28,7 +28,6 @@ bench "Parser.parse with large body", "CONNECT\n\n#{large_body}\x00" do |message
   parse_one(message)
 end
 
-large_binary = "b\x00" * ((Stompede::Stomp::Parser.max_message_size / 2) - 50) # make room for headers
-bench "Parser.parse with headers and large body", "CONNECT\ncontent-length:#{large_binary.bytesize}\n\n#{large_binary}\x00" do |message|
+bench "Parser.parse with headers and large body", "CONNECT\ncontent-length:#{large_body.bytesize}\n\n#{large_body}\x00" do |message|
   parse_one(message)
 end

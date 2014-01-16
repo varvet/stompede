@@ -1,19 +1,14 @@
 %%{
   machine message;
 
-  # data, p, pe, eof, cs, top, stack, ts, te and act
   getkey data.getbyte(p); # code for retrieving current char
 
-  ## Action state - needs resetting once consumed!
   action mark {
-    buffer = EMPTY_BUFFER.dup
-  }
-  action buffer {
-    buffer << fc
+    mark = p
   }
   action mark_key {
-    mk = buffer # needs reset
-    buffer = nil
+    mk = data.byteslice(mark, p - mark)
+    mark = nil
   }
   action mark_message {
     message = Stomp::Message.new(nil, nil)
@@ -24,20 +19,19 @@
     raise MessageSizeExceeded if message_size > max_message_size
   }
 
-  ## Action commands - should reset used state!
   action write_command {
-    message.write_command(buffer)
-    buffer = nil
+    message.write_command(data.byteslice(mark, p - mark))
+    mark = nil
   }
 
   action write_header {
-    message.write_header(mk, buffer)
-    mk = buffer = nil
+    message.write_header(mk, data.byteslice(mark, p - mark))
+    mk = mark = nil
   }
 
   action write_body {
-    message.write_body(buffer)
-    buffer = nil
+    message.write_body(data.byteslice(mark, p - mark))
+    mark = nil
   }
 
   action finish_headers {
@@ -49,12 +43,12 @@
   }
 
   action consume_null {
-    buffer.bytesize < content_length if content_length
+    (p - mark) < content_length if content_length
   }
 
   action consume_octet {
     if content_length
-      buffer.bytesize < content_length
+      (p - mark) < content_length
     else
       true
     end
@@ -72,17 +66,17 @@
   OCTET = any;
 
   client_command = "CONNECT" > mark;
-  command = client_command $ buffer % write_command . EOL;
+  command = client_command % write_command . EOL;
 
   HEADER_ESCAPE = "\\" . ("\\" | "n" | "r" | "c");
   HEADER_OCTET = HEADER_ESCAPE | (OCTET - "\r" - "\n" - "\\" - ":");
-  header_key = HEADER_OCTET+ > mark $ buffer % mark_key;
-  header_value = HEADER_OCTET* > mark $ buffer;
+  header_key = HEADER_OCTET+ > mark % mark_key;
+  header_value = HEADER_OCTET* > mark;
   header = header_key . ":" . header_value;
   headers = (header % write_header . EOL)* % finish_headers . EOL;
 
-  consume_body = ((NULL when consume_null | ^NULL when consume_octet)* $ buffer);
-  body = consume_body >to(mark) % write_body <: NULL;
+  consume_body = (NULL when consume_null | ^NULL when consume_octet)*;
+  body = consume_body >from(mark) % write_body <: NULL;
 
   message = ((command > mark_message) :> headers :> (body @ finish_message)) $ check_message_size;
 
@@ -107,7 +101,6 @@ module Stompede
         attr_accessor :max_message_size
       end
 
-      EMPTY_BUFFER = "".force_encoding("BINARY").freeze
       self.max_message_size = 1024 * 100 # 100KB
 
       # Parse a chunk of Stomp-formatted data into a Message.
@@ -115,14 +108,13 @@ module Stompede
       # @param [String] data
       # @param [Parser] state
       # @return [Stomp::Message, nil]
-      def self.parse(data, state)
+      def self.parse(data, state, offset = 0)
+        p = offset # pointer to current character
         pe = data.bytesize # end of chunk
-
-        p = 0 # pointer to current character
         message = state.message # message currently being parsed, if any
         cs = state.current_state # current state
         mk = state.mark_key # key for header currently being read
-        buffer = state.buffer # buffered data for marks
+        mark = state.mark # buffered data for marks
         message_size = state.message_size # how many bytes current message contains in total
         content_length = state.content_length # content length of current message
 
@@ -142,7 +134,7 @@ module Stompede
           state.message = message
           state.current_state = cs
           state.mark_key = mk
-          state.buffer = buffer
+          state.mark = mark
           state.message_size = message_size
           state.content_length = content_length
         end
@@ -153,7 +145,8 @@ module Stompede
       # Construct the parser.
       def initialize
         @error = nil
-        @buffer = nil
+        @data = nil
+        @mark = nil
         @message_size = nil
         @current_state = Stomp::Parser.start
         @message = nil
@@ -166,9 +159,6 @@ module Stompede
       # @return [Integer] message size accumulated so far
       attr_accessor :message_size
 
-      # @return [String] binary string of current parsing buffer
-      attr_accessor :buffer
-
       # @return [Integer, nil]
       attr_accessor :content_length
 
@@ -177,6 +167,9 @@ module Stompede
 
       # @return [Stomp::Message] stomp message currently being parsed
       attr_accessor :message
+
+      # @return [Integer] marking in the data being processed
+      attr_accessor :mark
 
       # @return [String] header key currently being parsed
       attr_accessor :mark_key
@@ -189,8 +182,22 @@ module Stompede
         raise error if error
 
         begin
-          Parser.parse(data, self) do |message|
+          if @data
+            offset = @data.bytesize
+            data = @data << data
+          else
+            offset = 0
+            data
+          end
+
+          Parser.parse(data, self, offset) do |message|
             yield message
+          end
+
+          if mark
+            @data = data
+          else
+            @data = nil
           end
         rescue => error
           self.error = error
