@@ -81,7 +81,8 @@
   header = header_key . ":" . header_value;
   headers = (header % write_header . EOL)* % finish_headers . EOL;
 
-  body = ((NULL when consume_null | ^NULL when consume_octet)* $ buffer) >to(mark) % write_body <: NULL;
+  consume_body = ((NULL when consume_null | ^NULL when consume_octet)* $ buffer);
+  body = consume_body >to(mark) % write_body <: NULL;
 
   message = ((command > mark_message) :> headers :> (body @ finish_message)) $ check_message_size;
 
