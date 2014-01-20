@@ -107,7 +107,8 @@ module Stompede
       #
       # @param [String] data
       # @param [Parser] state
-      # @return [Stomp::Message, nil]
+      # @yield [message] yields each message as it is parsed
+      # @yieldparam message [Stomp::Message]
       def self.parse(data, state, offset = 0)
         p = offset # pointer to current character
         pe = data.bytesize # end of chunk

@@ -17,3 +17,10 @@ test/tmp
 test/version_tmp
 tmp
 spec/profile
+
+# C extension
+*.o
+*.bundle
+mkmf.log
+Makefile
+tmp/
