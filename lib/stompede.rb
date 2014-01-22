@@ -15,7 +15,7 @@ require "stompede/session"
 require "stompede/subscription"
 
 begin
-  require "stompede/stomp/parser_native"
+  # require "stompede/stomp/parser_native"
 rescue LoadError
   # Native parser not available, fall back to pure-ruby implementation.
 end
