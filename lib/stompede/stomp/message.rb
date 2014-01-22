@@ -32,6 +32,16 @@ module Stompede
         @body = body || EMPTY
       end
 
+      # Content length of this message, according to headers.
+      #
+      # @raise [ArgumentError] if content-length is not a valid integer
+      # @return [Integer, nil]
+      def content_length
+        if headers.has_key?("content-length")
+          Integer(headers["content-length"])
+        end
+      end
+
       # Change the command of this message.
       #
       # @param [String] command

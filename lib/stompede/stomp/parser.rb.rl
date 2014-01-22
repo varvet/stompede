@@ -35,11 +35,7 @@
   }
 
   action finish_headers {
-    if message.headers.has_key?("content-length")
-      content_length = Integer(message.headers["content-length"])
-    else
-      content_length = nil
-    end
+    content_length = message.content_length
   }
 
   action consume_null {

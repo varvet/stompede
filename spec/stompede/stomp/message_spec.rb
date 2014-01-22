@@ -1,4 +1,21 @@
 describe Stompede::Stomp::Message do
+  describe "#content_length" do
+    it "returns content length if available" do
+      message = Stompede::Stomp::Message.new("CONNECT", { "content-length" => "1337" }, nil)
+      message.content_length.should eq 1337
+    end
+
+    it "returns nil if no content length defined" do
+      message = Stompede::Stomp::Message.new("CONNECT", nil)
+      message.content_length.should be_nil
+    end
+
+    it "raises an error if invalid content length defined" do
+      message = Stompede::Stomp::Message.new("CONNECT", { "content-length" => "LAWL" }, nil)
+      expect { message.content_length }.to raise_error(ArgumentError, /LAWL/)
+    end
+  end
+
   describe "#to_str" do
     specify "message with command only" do
       message = Stompede::Stomp::Message.new("CONNECT", nil)
