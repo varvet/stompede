@@ -71,13 +71,6 @@ module Stompede
       # bust our ruby method caching
       %% write data noprefix;
 
-      class << self
-        # @attr [Integer] maximum size (in bytes) a message may become before raising MessageSizeExceeded.
-        attr_accessor :max_message_size
-      end
-
-      self.max_message_size = 1024 * 100 # 100KB
-
       # Parse a chunk of Stomp-formatted data into a Message.
       #
       # @param [String] data
@@ -93,6 +86,7 @@ module Stompede
         mark = state.mark # buffered data for marks
         message_size = state.message_size # how many bytes current message contains in total
         content_length = state.content_length # content length of current message
+        max_message_size = state.max_message_size
 
         %% write exec;
 
@@ -127,7 +121,11 @@ module Stompede
         @current_state = Stomp::Parser.start
         @message = nil
         @mark_key = nil
+        @max_message_size = 1024 * 100 # 100KB
       end
+
+      # @attr [Integer] maximum size (in bytes) a message may become before raising MessageSizeExceeded.
+      attr_accessor :max_message_size
 
       # @return [StandardError] error raised during parsing
       attr_accessor :error

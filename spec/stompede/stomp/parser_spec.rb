@@ -185,8 +185,8 @@ describe Stompede::Stomp::Parser do
       end
 
       specify "total message size being too large with content-size" do
-        Stompede::Stomp::Parser.stub(max_message_size: 30)
         parser = Stompede::Stomp::Parser.new
+        parser.max_message_size = 30
         parser.parse("CONNECT\n") # 8
         parser.parse("header:value\n") # 21
         expect {
@@ -195,8 +195,8 @@ describe Stompede::Stomp::Parser do
       end
 
       specify "message size being too large without content-size" do
-        Stompede::Stomp::Parser.stub(max_message_size: 30)
         parser = Stompede::Stomp::Parser.new
+        parser.max_message_size = 30
         parser.parse("CONNECT\n") # 8
         parser.parse("content-size:30\n") # 24
         expect {
