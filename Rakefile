@@ -1,12 +1,25 @@
 require "rake/extensiontask"
 require "bundler/gem_tasks"
 
+def ragel(*args)
+  sh "ragel", "-I.", *args
+end
+
 # Build state machine before building gem.
 task :build => :compile
 
-rule ".rb" => ".rb.rl" do |t|
-  sh "ragel", "-F1", "-R", t.source, "-o", t.name
+file "parser_common.rl"
+
+rule ".rb" => %w[.rb.rl parser_common.rl] do |t|
+  ragel "-F1", "-R", t.source, "-o", t.name
 end
+
+rule ".c" => %w[.c.rl parser_common.rl] do |t|
+  ragel "-F1", "-C", t.source, "-o", t.name
+end
+
+desc "ragel machines"
+task :compile => %w[lib/stompede/stomp/parser.rb]
 
 Rake::ExtensionTask.new do |ext|
   ext.name = "parser_native"
@@ -14,20 +27,21 @@ Rake::ExtensionTask.new do |ext|
   ext.lib_dir = "lib/stompede/stomp"
 end
 
-desc "Compile all parsers, native and ragel."
-task :compile => "lib/stompede/stomp/parser.rb"
-
-desc "Clean up all generated files."
+desc "ragel machines"
 task :clean do |t|
-  source_tasks = Rake::Task["compile"].all_prerequisite_tasks.select(&:source)
+  source_tasks = Rake::Task[:compile].prerequisite_tasks.grep(Rake::FileTask)
   rm_f source_tasks.map(&:name)
 end
 
 namespace :ragel do
   desc "Show stomp parser state machine as an image"
   task :show => "lib/stompede/stomp/parser.rb" do |t|
-    ragel = t.prerequisite_tasks[0]
-    sh "ragel -V -p #{ragel.source} | dot -Tpng | open -a Preview -f"
+    mkdir_p "tmp"
+    ragel "-V", "-p", t.prerequisite_tasks[0].source, "-o", "tmp/parser.dot"
+    sh "dot -Tpng -O tmp/parser.dot"
+    rm "tmp/parser.dot"
+    sh "open tmp/parser.dot.png"
+    rm "tmp/parser.dot.png"
   end
 end
 
