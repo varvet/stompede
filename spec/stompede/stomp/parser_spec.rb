@@ -1,12 +1,17 @@
 describe Stompede::Stomp::Parser do
-  let(:parser) { Stompede::Stomp::Parser.new }
+  let(:messages) { [] }
+  let(:parser) { Stompede::Stomp::Parser.new { |m| messages << m } }
+
+  describe ".new" do
+    it "raises an error if no block is given" do
+      expect { Stompede::Stomp::Parser.new }.to raise_error(ArgumentError, /no block given/)
+    end
+  end
 
   context "#parse" do
     def parse_all(data)
-      messages = []
-      parser.parse(data) do |m|
-        messages << m
-      end
+      messages.clear
+      parser.parse(data)
       messages
     end
 
@@ -185,8 +190,7 @@ describe Stompede::Stomp::Parser do
       end
 
       specify "total message size being too large with content-size" do
-        parser = Stompede::Stomp::Parser.new
-        parser.max_message_size = 30
+        parser = Stompede::Stomp::Parser.new(max_message_size: 30) { |message| }
         parser.parse("CONNECT\n") # 8
         parser.parse("header:value\n") # 21
         expect {
@@ -195,8 +199,7 @@ describe Stompede::Stomp::Parser do
       end
 
       specify "message size being too large without content-size" do
-        parser = Stompede::Stomp::Parser.new
-        parser.max_message_size = 30
+        parser = Stompede::Stomp::Parser.new(max_message_size: 30) { |message| }
         parser.parse("CONNECT\n") # 8
         parser.parse("content-size:30\n") # 24
         expect {
