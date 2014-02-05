@@ -2,7 +2,6 @@ source 'https://rubygems.org'
 
 gemspec
 
-gem "pry"
 gem "perftools.rb", platform: :mri
 gem "benchmark-ips"
 

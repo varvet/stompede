@@ -65,8 +65,9 @@
   EOL = "\r"? . "\n";
   OCTET = any;
 
-  client_command = "CONNECT" > mark;
-  command = client_command % write_command . EOL;
+  client_commands = "SEND" | "SUBSCRIBE" | "UNSUBSCRIBE" | "BEGIN" | "COMMIT" | "ABORT" | "ACK" | "NACK" | "DISCONNECT" | "CONNECT" | "STOMP";
+  server_commands = "CONNECTED" | "MESSAGE" | "RECEIPT" | "ERROR";
+  command = (client_commands | server_commands) > mark % write_command . EOL;
 
   HEADER_ESCAPE = "\\" . ("\\" | "n" | "r" | "c");
   HEADER_OCTET = HEADER_ESCAPE | (OCTET - "\r" - "\n" - "\\" - ":");
