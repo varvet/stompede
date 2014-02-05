@@ -62,18 +62,3 @@ module Stompede
     end
   end
 end
-
-__END__
-Reel::Server::HTTP.supervise("0.0.0.0", 3000) do |connection|
-  # Support multiple keep-alive requests per connection
-  connection.each_request do |request|
-    if request.websocket?
-      Stompede.connect(request.websocket, app)
-    end
-  end
-end
-
-server = TCPServer.new do
-loop do
-  Stompede.connect(server.accept, app)
-end
