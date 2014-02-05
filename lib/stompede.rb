@@ -20,24 +20,30 @@ module Stompede
     def initialize(socket)
       @socket = socket
     end
-
-    def send(message)
-      @socket.write(Stomp::Message.new("MESSAGE", {}, message).to_str)
-    end
   end
 
   class Base
     include Celluloid
 
-    def initialize
-      @connector = Connector.new_link(Actor.current)
+    def on_open(session)
     end
 
-    def dispatch(message, session)
+    def on_connect(session, frame)
     end
 
-    def connect(socket)
-      @connector.async.connect(socket)
+    def on_subscribe(session, subscription, frame)
+    end
+
+    def on_send(session, frame)
+    end
+
+    def on_unsubscribe(session, subscription, frame)
+    end
+
+    def on_disconnect(session, frame)
+    end
+
+    def on_close(session)
     end
   end
 
@@ -46,19 +52,23 @@ module Stompede
 
     def initialize(app)
       @app = app
+      link(@app)
     end
 
-    def connect(socket)
+    def open(socket)
       session = Session.new(socket)
-
       parser = Stomp::Parser.new
+
+      @app.on_open(session)
 
       loop do
         chunk = socket.readpartial(Stompede::BUFFER_SIZE)
         parser.parse(chunk) do |message|
-          @app.dispatch(message, session)
+          #@app.dispatch(message, session)
         end
       end
+    rescue
+      @app.on_close(session) rescue nil
     end
   end
 end

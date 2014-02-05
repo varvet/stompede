@@ -1,20 +1,42 @@
 class TestApp < Stompede::Base
-  def dispatch(message, session)
-    session.send("Hi!")
+  def initialize(latch)
+    @latch = latch
+  end
+
+  def on_open(session)
+    @latch.push [:on_open, session]
+  end
+
+  def on_close(session)
+    @latch.push [:on_close, session]
   end
 end
 
 describe Stompede::Base do
-  it "works" do
-    client_side, server_side = UNIXSocket.pair.map { |s| Celluloid::IO::UNIXSocket.new(s) }
+  let(:app) { TestApp.new(latch) }
+  let(:sockets) { UNIXSocket.pair.map { |s| Celluloid::IO::UNIXSocket.new(s) } }
+  let(:client_io) { sockets[0] }
+  let(:server_io) { sockets[1] }
 
-    app = TestApp.new
+  describe "#on_open" do
+    it "is called when a socket is opened" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
 
-    app.connect(server_side)
+      session = await(:on_open).first
+      session.should be_an_instance_of(Stompede::Session)
+    end
+  end
 
-    client_side.write(Stompede::Stomp::Message.new("SEND", {}, "Hi!").to_str)
+  describe "#on_close" do
+    it "is called when a socket is closed" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
 
-    message = parse_message(client_side)
-    message.body.should eq("Hi!")
+      client_io.close
+
+      session = await(:on_close).first
+      session.should be_an_instance_of(Stompede::Session)
+    end
   end
 end
