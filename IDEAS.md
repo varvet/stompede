@@ -25,14 +25,40 @@ class StompedeApp < Stompede::Base
 
   end
 
-  subscribe "/foo/bar" do |subscriber, message|
+  subscribe "/foo/bar" do |client, message|
     @subscribers << subscriber
+  end
+
+  unsubscribe "/foo/bar" do |client, message|
+    @subscribers.delete subscriber
   end
 
   message "/foo/bar" do |subscriber, message|
     @subscribers.each do |subscriber|
       subscriber << message
     end
+    after(0) { raise "foo" }
   end
 end
 ```
+
+connections = Queue.new
+
+app = StompedeApp.new
+handler = Handler.new(app, connections)
+
+server = TCPServer.new
+
+loop do
+  app << server.accept
+end
+
+parser = Parser.new
+
+parser.on_message do |message|
+  app.dispatch(message)
+end
+
+loop do
+  parser << connection.read
+end

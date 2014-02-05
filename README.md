@@ -15,6 +15,29 @@ STOMP over WebSockets for Ruby. Stompede aims to supply:
 
 TODO: Write usage instructions here.
 
+### Guarantees
+
+- `open` for a client will always receive a matching `close` (TODO: exceptions?)
+- `subscribe` with a subscriber will always receive a matching `unsubscribe` (TODO: exceptions?)
+- `connect` and `disconnect` may not be called for a client, for example if it
+  disconnects instantly.
+- All messages for a single client are processed in FIFO order serially.
+- `close` may not be called immediately when a client disconnects, but some
+  time later.
+- Once `close` has been called, no further messages from the client will be
+  processed.
+
+- Objects representing
+
+### Constraints
+
+- Clients may not subscribe to the same destination twice.
+- Transactions are not (yet) supported.
+
+### Sane defaults
+
+- SEND frame with a receipt from the client will receive a RECEIPT when the callback succeeds, and an ERROR in case it caused an exception. (assuming the client is still connected)
+
 ## Development
 
 Development should be ez.
