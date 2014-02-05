@@ -74,6 +74,10 @@ module Stompede
         message
       end
 
+      def [](key)
+        @headers[key]
+      end
+
       private
 
       # @see http://stomp.github.io/stomp-specification-1.2.html#Value_Encoding

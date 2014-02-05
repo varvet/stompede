@@ -31,9 +31,13 @@ module Helpers
 
   def parse_message(io)
     parser = Stompede::Stomp::Parser.new
-    parser.parse(io.readpartial(Stompede::BUFFER_SIZE)) do |message|
-      return message
+    Timeout.timeout(0.5) do
+      parser.parse(io.readpartial(Stompede::BUFFER_SIZE)) do |message|
+        return message
+      end
     end
+  rescue Timeout::Error
+    raise "Parsing message timed out!"
   end
 end
 

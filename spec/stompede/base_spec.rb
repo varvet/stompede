@@ -10,6 +10,10 @@ class TestApp < Stompede::Base
   def on_close(session)
     @latch.push [:on_close, session]
   end
+
+  def on_connect(session, message)
+    @latch.push [:on_connect, session, message]
+  end
 end
 
 describe Stompede::Base do
@@ -37,6 +41,31 @@ describe Stompede::Base do
 
       session = await(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
+    end
+  end
+
+  describe "#on_connect" do
+    it "is called when a client sends a CONNECT frame" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("CONNECT", { "foo" => "Bar" }, "").to_str)
+
+      session, message = await(:on_connect)
+      session.should be_an_instance_of(Stompede::Session)
+      message["foo"].should eq("Bar")
+    end
+
+    it "replies with a CONNECTED frame when the handler succeeds" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("CONNECT", { "foo" => "Bar" }, "").to_str)
+      message = parse_message(client_io)
+      message.command.should eq("CONNECTED")
+      message["version"].should eq("1.2")
+      message["server"].should eq("Stompede/#{Stompede::VERSION}")
+      message["session"].should match(/\A[a-f0-9\-]{36}\z/)
     end
   end
 end
