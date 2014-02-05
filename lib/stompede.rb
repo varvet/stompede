@@ -30,7 +30,7 @@ module Stompede
     include Celluloid
 
     def initialize
-      @connector = Connector.new_link(self)
+      @connector = Connector.new_link(Actor.current)
     end
 
     def dispatch(message, session)
