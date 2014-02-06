@@ -203,26 +203,69 @@ describe Stompede::Base do
   end
 
   describe "#on_unsubscribe" do
-    it "is called when a client sends an unsubscribe frame" do
-      send_message(client_io, "UNSUBSCRIBE", "Hello", "foo" => "Bar")
+    it "is called when a client sends an unsubscribe frame with the previous Subscription" do
+      send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
+      send_message(client_io, "UNSUBSCRIBE", "id" => "1", "foo" => "Bar")
 
-      session, subscription, frame = latch.receive(:on_unsubscribe)
+      _, subscribe_subscription, _ = latch.receive(:on_subscribe)
+      session, unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
       session.should be_an_instance_of(Stompede::Session)
       frame["foo"].should eq("Bar")
 
       connector.should be_alive
       server_io.should_not be_closed
+
+      unsubscribe_subscription.id.should eq("1")
+      unsubscribe_subscription.should eql(subscribe_subscription)
     end
 
     it "closes socket when it throws an error", error: :on_unsubscribe do
-      send_message(client_io, "UNSUBSCRIBE", "Hello", "foo" => "Bar")
+      send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
+      send_message(client_io, "UNSUBSCRIBE", "id" => "1")
 
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
       client_io.should be_eof
     end
 
-    it "replies with an error if subscription does not include an id"
-    it "replies with an error if a subscription with the same id does not exist"
+    it "replies with an error if subscription does not include an id" do
+      send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
+      send_message(client_io, "UNSUBSCRIBE")
+
+      message = parse_message(client_io)
+      message.command.should eq("ERROR")
+      message["content-type"].should eq("text/plain")
+      message.body.should match("Stompede::ClientError: subscription does not include an id")
+
+      connector.should be_alive
+      client_io.should be_eof
+    end
+
+    it "replies with an error if a subscription with the same id does not exist" do
+      send_message(client_io, "UNSUBSCRIBE", "id" => "1")
+
+      message = parse_message(client_io)
+      message.command.should eq("ERROR")
+      message["content-type"].should eq("text/plain")
+      message.body.should match("Stompede::ClientError: subscription with id \"1\" does not exist")
+
+      connector.should be_alive
+      client_io.should be_eof
+    end
+
+    it "removes subscription when unsubscribing" do
+      send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
+      send_message(client_io, "UNSUBSCRIBE", "id" => "1")
+      send_message(client_io, "UNSUBSCRIBE", "id" => "1")
+
+      message = parse_message(client_io)
+      message.command.should eq("ERROR")
+      message["content-type"].should eq("text/plain")
+      message.body.should match("Stompede::ClientError: subscription with id \"1\" does not exist")
+
+      connector.should be_alive
+      client_io.should be_eof
+    end
+
     it "is called if the session has a subscription and the socket is closed"
     it "WHAT if the session has a subscription and the app dies"
   end

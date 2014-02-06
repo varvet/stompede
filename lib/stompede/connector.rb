@@ -53,7 +53,7 @@ module Stompede
             subscription = session.subscribe(message)
             @app.on_subscribe(session, subscription, message)
           when "UNSUBSCRIBE"
-            subscription = nil
+            subscription = session.unsubscribe(message)
             @app.on_unsubscribe(session, subscription, message)
           end
         end

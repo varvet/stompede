@@ -16,7 +16,9 @@ module Stompede
     end
 
     def validate!
-      raise ClientError, "subscription does not include a destination" unless destination
+      if @frame.command == "SUBSCRIBE"
+        raise ClientError, "subscription does not include a destination" unless destination
+      end
       raise ClientError, "subscription does not include an id" unless id
     end
   end
