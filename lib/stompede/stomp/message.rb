@@ -78,6 +78,10 @@ module Stompede
         @headers[key]
       end
 
+      def destination
+        self["destination"]
+      end
+
       private
 
       # @see http://stomp.github.io/stomp-specification-1.2.html#Value_Encoding

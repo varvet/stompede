@@ -49,9 +49,9 @@ describe Stompede::Base do
 
       session = latch.receive(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
-      client_io.should be_eof
 
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+      client_io.should be_eof
     end
 
     it "closes socket even when on_close dies" do
@@ -61,9 +61,9 @@ describe Stompede::Base do
 
       session = latch.receive(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
-      client_io.should be_eof
 
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+      client_io.should be_eof
     end
   end
 
@@ -102,9 +102,9 @@ describe Stompede::Base do
       message["version"].should eq("1.2")
       message["content-type"].should eq("text/plain")
       message.body.should match("MooError: MOOOO!")
-      client_io.should be_eof
 
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+      client_io.should be_eof
     end
   end
 
@@ -140,8 +140,92 @@ describe Stompede::Base do
 
       latch.invocations_until(:on_close).should_not include(:on_disconnect)
 
-      client_io.should be_eof
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+      client_io.should be_eof
+    end
+  end
+
+  describe "#on_send" do
+    it "is called when a client sends a SEND frame" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("SEND", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+
+      session, frame = latch.receive(:on_send)
+      session.should be_an_instance_of(Stompede::Session)
+      frame["foo"].should eq("Bar")
+      frame.destination.should eq("/foo/bar")
+
+      connector.should be_alive
+      server_io.should_not be_closed
+    end
+
+    it "closes socket when it throws an error" do
+      connector = Stompede::Connector.new(TestApp.new(latch, error: :on_send))
+      monitor = CrashMonitor.new(connector)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("SEND", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+
+      expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+      client_io.should be_eof
+    end
+  end
+
+  describe "#on_subscribe" do
+    it "is called when a client sends a SUBSCRIBE frame" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "/foo/bar", "foo" => "Bar" }, "").to_str)
+
+      session, subscription, frame = latch.receive(:on_subscribe)
+      session.should be_an_instance_of(Stompede::Session)
+      frame["foo"].should eq("Bar")
+      frame.destination.should eq("/foo/bar")
+
+      connector.should be_alive
+      server_io.should_not be_closed
+    end
+
+    it "closes socket when it throws an error" do
+      connector = Stompede::Connector.new(TestApp.new(latch, error: :on_subscribe))
+      monitor = CrashMonitor.new(connector)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+
+      expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+      client_io.should be_eof
+    end
+  end
+
+  describe "#on_unsubscribe" do
+    it "is called when a client sends an unsubscribe frame" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("UNSUBSCRIBE", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+
+      session, subscription, frame = latch.receive(:on_unsubscribe)
+      session.should be_an_instance_of(Stompede::Session)
+      frame["foo"].should eq("Bar")
+      frame.destination.should eq("/foo/bar")
+
+      connector.should be_alive
+      server_io.should_not be_closed
+    end
+
+    it "closes socket when it throws an error" do
+      connector = Stompede::Connector.new(TestApp.new(latch, error: :on_unsubscribe))
+      monitor = CrashMonitor.new(connector)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("UNSUBSCRIBE", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+
+      expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+      client_io.should be_eof
     end
   end
 end

@@ -96,6 +96,14 @@ module Stompede
             end
           when "DISCONNECT"
             @app.on_disconnect(session, message)
+          when "SEND"
+            @app.on_send(session, message)
+          when "SUBSCRIBE"
+            subscription = nil
+            @app.on_subscribe(session, subscription, message)
+          when "UNSUBSCRIBE"
+            subscription = nil
+            @app.on_unsubscribe(session, subscription, message)
           end
         end
       end
