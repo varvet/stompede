@@ -72,7 +72,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("CONNECT", { "foo" => "Bar" }, "").to_str)
+      send_message(client_io, "CONNECT", "foo" => "Bar")
 
       session, message = latch.receive(:on_connect)
       session.should be_an_instance_of(Stompede::Session)
@@ -83,7 +83,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("CONNECT", { "foo" => "Bar" }, "").to_str)
+      send_message(client_io, "CONNECT", "foo" => "Bar")
       message = parse_message(client_io)
       message.command.should eq("CONNECTED")
       message["version"].should eq("1.2")
@@ -96,7 +96,7 @@ describe Stompede::Base do
       monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("CONNECT", { "foo" => "Bar" }, "").to_str)
+      send_message(client_io, "CONNECT", "foo" => "Bar")
       message = parse_message(client_io)
       message.command.should eq("ERROR")
       message["version"].should eq("1.2")
@@ -113,7 +113,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("DISCONNECT", { "foo" => "Bar" }, "").to_str)
+      send_message(client_io, "DISCONNECT", "foo" => "Bar")
 
       session, frame = latch.receive(:on_disconnect)
       session.should be_an_instance_of(Stompede::Session)
@@ -150,7 +150,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("SEND", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+      send_message(client_io, "SEND", "Hello", "destination" => "/foo/bar", "foo" => "Bar")
 
       session, frame = latch.receive(:on_send)
       session.should be_an_instance_of(Stompede::Session)
@@ -166,7 +166,7 @@ describe Stompede::Base do
       monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("SEND", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+      send_message(client_io, "SEND", "Hello", "destination" => "/foo/bar", "foo" => "Bar")
 
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
       client_io.should be_eof
@@ -178,7 +178,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "/foo/bar", "id" => "1", "foo" => "Bar" }, "").to_str)
+      send_message(client_io, "SUBSCRIBE", "destination" => "/foo/bar", "id" => "1", "foo" => "Bar")
 
       session, subscription, frame = latch.receive(:on_subscribe)
       session.should be_an_instance_of(Stompede::Session)
@@ -194,7 +194,7 @@ describe Stompede::Base do
       monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "/foo/bar", "id" => "1", "foo" => "Bar" }, "Hello").to_str)
+      send_message(client_io, "SUBSCRIBE", "destination" => "/foo/bar", "id" => "1", "foo" => "Bar")
 
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
       client_io.should be_eof
@@ -204,7 +204,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "id" => "1" }, "").to_str)
+      send_message(client_io, "SUBSCRIBE", "id" => "1")
 
       latch.invocations_until(:on_close).should eq([:on_open, :on_close])
 
@@ -221,7 +221,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "1" }, "").to_str)
+      send_message(client_io, "SUBSCRIBE", "destination" => "1")
 
       latch.invocations_until(:on_close).should eq([:on_open, :on_close])
 
@@ -238,8 +238,8 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "1", "id" => "1" }, "").to_str)
-      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "2", "id" => "1" }, "").to_str)
+      send_message(client_io, "SUBSCRIBE", "destination" => "1", "id" => "1")
+      send_message(client_io, "SUBSCRIBE", "destination" => "2", "id" => "1")
 
       latch.invocations_until(:on_close).should eq([:on_open, :on_subscribe, :on_close])
 
@@ -258,7 +258,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("UNSUBSCRIBE", { "foo" => "Bar" }, "Hello").to_str)
+      send_message(client_io, "UNSUBSCRIBE", "Hello", "foo" => "Bar")
 
       session, subscription, frame = latch.receive(:on_unsubscribe)
       session.should be_an_instance_of(Stompede::Session)
@@ -273,7 +273,7 @@ describe Stompede::Base do
       monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("UNSUBSCRIBE", { "foo" => "Bar" }, "Hello").to_str)
+      send_message(client_io, "UNSUBSCRIBE", "Hello", "foo" => "Bar")
 
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
       client_io.should be_eof

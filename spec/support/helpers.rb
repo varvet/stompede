@@ -42,6 +42,16 @@ module Helpers
     @_latch
   end
 
+  def send_message(io, command, *args)
+    headers = if args.last.is_a?(Hash)
+      args.pop
+    else
+      {}
+    end
+    body = args.shift || ""
+    io.write(Stompede::Stomp::Message.new(command, headers, body).to_str)
+  end
+
   def parse_message(io)
     parser = Stompede::Stomp::Parser.new
     Timeout.timeout(0.5) do
