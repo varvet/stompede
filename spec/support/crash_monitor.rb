@@ -26,16 +26,6 @@ class CrashMonitor
     abort reason if reason
   end
 
-  def ensure_alive!
-    timeout(@timeout) do
-      sleep(0.01) until idle?
-    end
-  end
-
-  def idle?
-    @actor.tasks.none?(&:running?) && @actor.mailbox.size.zero?
-  end
-
   def dying_actor(actor, reason)
     @reason = reason
     signal :crash, reason

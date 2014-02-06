@@ -25,7 +25,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      session = await(:on_open).first
+      session = latch.receive(:on_open).first
       session.should be_an_instance_of(Stompede::Session)
     end
   end
@@ -33,14 +33,13 @@ describe Stompede::Base do
   describe "#on_close" do
     it "is called when a socket is closed" do
       connector = Stompede::Connector.new(app)
-      monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
       client_io.close
 
-      session = await(:on_close).first
+      session = latch.receive(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
-      monitor.ensure_alive!
+      connector.should be_alive
     end
 
     it "is called even when app throws an error" do
@@ -48,7 +47,7 @@ describe Stompede::Base do
       monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
-      session = await(:on_close).first
+      session = latch.receive(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
       client_io.should be_eof
 
@@ -60,7 +59,7 @@ describe Stompede::Base do
       monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
-      session = await(:on_close).first
+      session = latch.receive(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
       client_io.should be_eof
 
@@ -75,7 +74,7 @@ describe Stompede::Base do
 
       client_io.write(Stompede::Stomp::Message.new("CONNECT", { "foo" => "Bar" }, "").to_str)
 
-      session, message = await(:on_connect)
+      session, message = latch.receive(:on_connect)
       session.should be_an_instance_of(Stompede::Session)
       message["foo"].should eq("Bar")
     end
@@ -105,6 +104,43 @@ describe Stompede::Base do
       message.body.should match("MooError: MOOOO!")
       client_io.should be_eof
 
+      expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+    end
+  end
+
+  describe "#on_disconnect" do
+    it "is called when a client sends a DISCONNECT frame" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("DISCONNECT", { "foo" => "Bar" }, "").to_str)
+
+      session, frame = latch.receive(:on_disconnect)
+      session.should be_an_instance_of(Stompede::Session)
+      frame["foo"].should eq("Bar")
+
+      connector.should be_alive
+      server_io.should_not be_closed
+    end
+
+    it "is not called when a socket is closed" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.close
+
+      latch.invocations_until(:on_close).should_not include(:on_disconnect)
+      connector.should be_alive
+    end
+
+    it "is not called when app throws an error" do
+      connector = Stompede::Connector.new(TestApp.new(latch, error: :on_open))
+      monitor = CrashMonitor.new(connector)
+      connector.async.open(server_io)
+
+      latch.invocations_until(:on_close).should_not include(:on_disconnect)
+
+      client_io.should be_eof
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
     end
   end

@@ -1,25 +1,45 @@
 module Helpers
+  class Latch
+    def initialize
+      @queue = Queue.new
+    end
+
+    def push(object)
+      @queue.push(object)
+    end
+
+    def invocations_until(method)
+      messages_until(method).map(&:first)
+    end
+
+    def receive(method)
+      messages_until(method).last.drop(1)
+    end
+
+  private
+
+    def messages_until(method)
+      Timeout.timeout(0.5) do
+        list = []
+        loop do
+          list.push(@queue.pop)
+          break if list.last[0] == method
+        end
+        list
+      end
+    rescue Timeout::Error
+      raise "Latch timed out!"
+    end
+  end
+
   def self.included(rspec)
     rspec.before do
-      @_latch = Queue.new
+      @_latch = Latch.new
     end
   end
 
   def latch
     @_latch
-  end
-
-  def await(method)
-    Timeout.timeout(0.5) do
-      loop do
-        data = @_latch.pop
-        if data[0] == method
-          return data.drop(1)
-        end
-      end
-    end
-  rescue Timeout::Error
-    raise "Await timed out!"
   end
 
   def parse_message(io)

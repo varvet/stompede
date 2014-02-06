@@ -75,7 +75,8 @@ module Stompede
       loop do
         chunk = safe_io { socket.readpartial(Stompede::BUFFER_SIZE) }
         parser.parse(chunk) do |message|
-          if message.command == "CONNECT"
+          case message.command
+          when "CONNECT"
             begin
               @app.on_connect(session, message)
             rescue => e
@@ -93,8 +94,9 @@ module Stompede
               }
               safe_io { socket.write(Stomp::Message.new("CONNECTED", headers, "").to_str) }
             end
+          when "DISCONNECT"
+            @app.on_disconnect(session, message)
           end
-          #@app.dispatch(message, session)
         end
       end
     rescue Disconnected
