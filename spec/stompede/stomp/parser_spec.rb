@@ -115,7 +115,13 @@ describe Stompede::Stomp::Parser do
       it "can parse headers with no value" do
         messages = parse_all("CONNECT\nmoo:\n\n\x00")
         messages.length.should eq(1)
-        messages[0].headers.should eq("moo" => "")
+        messages[0].headers.should eq("moo" => nil)
+      end
+
+      it "nullifies previous headers" do
+        messages = parse_all("CONNECT\nmoo:\nmoo:hello\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].headers.should eq("moo" => nil)
       end
 
       it "prioritises first header when given multiple of same key" do

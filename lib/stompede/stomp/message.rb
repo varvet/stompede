@@ -45,7 +45,8 @@ module Stompede
       # @param [String] value
       def write_header(key, value)
         # @see http://stomp.github.io/stomp-specification-1.2.html#Repeated_Header_Entries
-        @headers[translate_header(key)] ||= translate_header(value)
+        key = translate_header(key)
+        @headers[key] = translate_header(value) unless @headers.has_key?(key)
       end
 
       # Write the body to this message.
@@ -86,7 +87,7 @@ module Stompede
 
       # @see http://stomp.github.io/stomp-specification-1.2.html#Value_Encoding
       def translate_header(value)
-        value.gsub(HEADER_TRANSLATIONS_KEYS, HEADER_TRANSLATIONS)
+        value.gsub(HEADER_TRANSLATIONS_KEYS, HEADER_TRANSLATIONS) unless value.empty?
       end
 
       # inverse of #translate_header
