@@ -10,6 +10,7 @@ module Stompede
 
     def very_safe_io
       yield
+    rescue IOError
     end
 
     def initialize(app)
