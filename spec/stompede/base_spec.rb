@@ -1,36 +1,24 @@
 class TestApp
-  def initialize(latch)
+  class MooError < StandardError; end
+
+  def initialize(latch, error: nil)
     @latch = latch
+    @error = Array(error)
   end
 
-  def on_open(session)
-    @latch.push [:on_open, session]
-  end
-
-  def on_close(session)
-    @latch.push [:on_close, session]
-  end
-
-  def on_connect(session, message)
-    @latch.push [:on_connect, session, message]
-  end
-end
-
-class ErrorApp
-  MooError = Class.new(StandardError)
-  def initialize(cause)
-    @cause = cause
-  end
   [:on_open, :on_connect, :on_subscribe, :on_send, :on_unsubscribe, :on_disconnect, :on_close].each do |m|
-    define_method(m) { |*args| raise MooError, "MOOOO!" if @cause == m }
+    define_method(m) do |*args|
+      @latch.push([m, *args])
+      raise MooError, "MOOOO!" if @error.include?(m)
+    end
   end
 end
 
 describe Stompede::Base do
   let(:app) { TestApp.new(latch) }
-  let(:sockets) { UNIXSocket.pair.map { |s| Celluloid::IO::UNIXSocket.new(s) } }
+  let(:sockets) { UNIXSocket.pair }
   let(:client_io) { sockets[0] }
-  let(:server_io) { sockets[1] }
+  let(:server_io) { Celluloid::IO::UNIXSocket.new(sockets[1]) }
 
   describe "#on_open" do
     it "is called when a socket is opened" do
@@ -53,6 +41,24 @@ describe Stompede::Base do
       session = await(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
       monitor.ensure_alive!
+    end
+
+    it "is called even when app throws an error" do
+      connector = Stompede::Connector.new(TestApp.new(latch, error: :on_open))
+      connector.async.open(server_io)
+
+      session = await(:on_close).first
+      session.should be_an_instance_of(Stompede::Session)
+      client_io.should be_eof
+    end
+
+    it "closes socket even when on_close dies" do
+      connector = Stompede::Connector.new(TestApp.new(latch, error: [:on_open, :on_close]))
+      connector.async.open(server_io)
+
+      session = await(:on_close).first
+      session.should be_an_instance_of(Stompede::Session)
+      client_io.should be_eof
     end
   end
 
@@ -81,7 +87,7 @@ describe Stompede::Base do
     end
 
     it "replies with an ERROR frame when the handler fails" do
-      connector = Stompede::Connector.new(ErrorApp.new(:on_connect))
+      connector = Stompede::Connector.new(TestApp.new(latch, error: :on_connect))
       connector.async.open(server_io)
       monitor = CrashMonitor.new(connector)
 
@@ -93,7 +99,7 @@ describe Stompede::Base do
       message.body.should match("MooError: MOOOO!")
       client_io.should be_eof
 
-      expect { monitor.wait_for_crash! }.to raise_error(ErrorApp::MooError, "MOOOO!")
+      expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
     end
   end
 end

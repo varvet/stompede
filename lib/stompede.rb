@@ -100,8 +100,8 @@ module Stompede
     rescue Disconnected
       # ignore
     ensure
-      @app.on_close(session)
       socket.close
+      @app.on_close(session)
     end
   end
 end
