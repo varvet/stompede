@@ -46,11 +46,13 @@ describe Stompede::Base do
     it "is called when a socket is closed" do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
+      monitor = CrashMonitor.new(connector)
 
       client_io.close
 
       session = await(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
+      monitor.ensure_alive!
     end
   end
 
