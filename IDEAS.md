@@ -3,34 +3,40 @@ class StompedeApp < Stompede::Base
   def initialize
     @subscribers = []
     @worker = Worker.pool(16)
+    @dispatcher = CustomDispatcher.new(self)
   end
 
   mount "/other", MyStomplet
 
-  open do |connection|
-    connection.open_timeout = after(5) { connection.close }
+  open do |session|
+    session.open_timeout = after(5) { session.close }
   end
 
-  connect do |connection, message|
+  connect do |session, message|
     worker.do_heavy_work
   end
 
-  disconnect do |connection, message|
+  disconnect do |session, message|
     foo = @foo
     some_other_actor.some_method
     @foo = foo + 1
   end
 
-  close do |connection|
+  close do |session|
 
   end
 
-  subscribe "/foo/bar" do |client, message|
-    @subscribers << subscriber
+  subscribe "/foo/bar" do |subscription, message|
+    if not_authenticated?
+      subscription.close
+    else
+      reply = subscription.message("Hello")
+      qqweokqwoek
+      end
   end
 
-  unsubscribe "/foo/bar" do |client, message|
-    @subscribers.delete subscriber
+  unsubscribe "/foo/bar" do |subscription, message|
+    subscription.message("WAT?")
   end
 
   message "/foo/bar" do |subscriber, message|
@@ -42,10 +48,10 @@ class StompedeApp < Stompede::Base
 end
 ```
 
-connections = Queue.new
+sessions = Queue.new
 
 app = StompedeApp.new
-handler = Handler.new(app, connections)
+handler = Handler.new(app, sessions)
 
 server = TCPServer.new
 
@@ -60,5 +66,5 @@ parser.on_message do |message|
 end
 
 loop do
-  parser << connection.read
+  parser << session.read
 end
