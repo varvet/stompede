@@ -2,6 +2,12 @@ module Stompede
   class Error < StandardError
   end
 
+  class ClientError < Error
+  end
+
+  class Disconnected < Error
+  end
+
   # Errors raised by the Stomp::Parser.
   class ParseError < Error
   end

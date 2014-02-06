@@ -12,6 +12,7 @@ require "stompede/stomp/message"
 require "stompede/connector"
 require "stompede/base"
 require "stompede/session"
+require "stompede/subscription"
 
 begin
   require "stompede/stomp/parser_native"

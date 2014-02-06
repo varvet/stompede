@@ -2,12 +2,14 @@ module Stompede
   class Connector
     include Celluloid::IO
 
-    class Disconnected < IOError; end
-
     def safe_io
       yield
     rescue IOError
       raise Disconnected, "client disconnected"
+    end
+
+    def very_safe_io
+      yield
     end
 
     def initialize(app)
@@ -48,7 +50,8 @@ module Stompede
           when "SEND"
             @app.on_send(session, message)
           when "SUBSCRIBE"
-            subscription = nil
+            subscription = Subscription.new(session, message)
+            subscription.validate!
             @app.on_subscribe(session, subscription, message)
           when "UNSUBSCRIBE"
             subscription = nil
@@ -57,7 +60,12 @@ module Stompede
         end
       end
     rescue Disconnected
-      # ignore
+      # no op
+    rescue ClientError => e
+      very_safe_io do
+        headers = { "content-type" => "text/plain" }
+        socket.write(Stomp::Message.new("ERROR", headers, "#{e.class}: #{e.message}\n\n#{e.backtrace.join("\n")}").to_str)
+      end
     ensure
       socket.close
       @app.on_close(session)

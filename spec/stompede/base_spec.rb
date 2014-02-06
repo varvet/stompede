@@ -178,7 +178,7 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "/foo/bar", "foo" => "Bar" }, "").to_str)
+      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "/foo/bar", "id" => "1", "foo" => "Bar" }, "").to_str)
 
       session, subscription, frame = latch.receive(:on_subscribe)
       session.should be_an_instance_of(Stompede::Session)
@@ -194,11 +194,47 @@ describe Stompede::Base do
       monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "/foo/bar", "id" => "1", "foo" => "Bar" }, "Hello").to_str)
 
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
       client_io.should be_eof
     end
+
+    it "replies with an error if subscription does not include a destination" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "id" => "1" }, "").to_str)
+
+      latch.invocations_until(:on_close).should eq([:on_open, :on_close])
+
+      message = parse_message(client_io)
+      message.command.should eq("ERROR")
+      message["content-type"].should eq("text/plain")
+      message.body.should match("Stompede::ClientError: subscription does not include a destination")
+
+      connector.should be_alive
+      client_io.should be_eof
+    end
+
+    it "replies with an error if subscription does not include an id" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "1" }, "").to_str)
+
+      latch.invocations_until(:on_close).should eq([:on_open, :on_close])
+
+      message = parse_message(client_io)
+      message.command.should eq("ERROR")
+      message["content-type"].should eq("text/plain")
+      message.body.should match("Stompede::ClientError: subscription does not include an id")
+
+      connector.should be_alive
+      client_io.should be_eof
+    end
+
+    it "replies with an error if a subscription with the same id already exists"
   end
 
   describe "#on_unsubscribe" do
@@ -206,12 +242,11 @@ describe Stompede::Base do
       connector = Stompede::Connector.new(app)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("UNSUBSCRIBE", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+      client_io.write(Stompede::Stomp::Message.new("UNSUBSCRIBE", { "foo" => "Bar" }, "Hello").to_str)
 
       session, subscription, frame = latch.receive(:on_unsubscribe)
       session.should be_an_instance_of(Stompede::Session)
       frame["foo"].should eq("Bar")
-      frame.destination.should eq("/foo/bar")
 
       connector.should be_alive
       server_io.should_not be_closed
@@ -222,10 +257,15 @@ describe Stompede::Base do
       monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
-      client_io.write(Stompede::Stomp::Message.new("UNSUBSCRIBE", { "destination" => "/foo/bar", "foo" => "Bar" }, "Hello").to_str)
+      client_io.write(Stompede::Stomp::Message.new("UNSUBSCRIBE", { "foo" => "Bar" }, "Hello").to_str)
 
       expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
       client_io.should be_eof
     end
+
+    it "replies with an error if subscription does not include an id"
+    it "replies with an error if a subscription with the same id does not exist"
+    it "is called if the session has a subscription and the socket is closed"
+    it "WHAT if the session has a subscription and the app dies"
   end
 end
