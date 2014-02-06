@@ -50,8 +50,7 @@ module Stompede
           when "SEND"
             @app.on_send(session, message)
           when "SUBSCRIBE"
-            subscription = Subscription.new(session, message)
-            subscription.validate!
+            subscription = session.subscribe(message)
             @app.on_subscribe(session, subscription, message)
           when "UNSUBSCRIBE"
             subscription = nil

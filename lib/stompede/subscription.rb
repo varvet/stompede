@@ -5,9 +5,17 @@ module Stompede
       @frame = frame
     end
 
+    def id
+      @frame["id"]
+    end
+
+    def destination
+      @frame["destination"]
+    end
+
     def validate!
-      raise ClientError, "subscription does not include a destination" unless @frame["destination"]
-      raise ClientError, "subscription does not include an id" unless @frame["id"]
+      raise ClientError, "subscription does not include a destination" unless destination
+      raise ClientError, "subscription does not include an id" unless id
     end
   end
 end

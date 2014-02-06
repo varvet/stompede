@@ -234,7 +234,23 @@ describe Stompede::Base do
       client_io.should be_eof
     end
 
-    it "replies with an error if a subscription with the same id already exists"
+    it "replies with an error if a subscription with the same id already exists" do
+      connector = Stompede::Connector.new(app)
+      connector.async.open(server_io)
+
+      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "1", "id" => "1" }, "").to_str)
+      client_io.write(Stompede::Stomp::Message.new("SUBSCRIBE", { "destination" => "2", "id" => "1" }, "").to_str)
+
+      latch.invocations_until(:on_close).should eq([:on_open, :on_subscribe, :on_close])
+
+      message = parse_message(client_io)
+      message.command.should eq("ERROR")
+      message["content-type"].should eq("text/plain")
+      message.body.should match("Stompede::ClientError: subscription with id \"1\" already exists")
+
+      connector.should be_alive
+      client_io.should be_eof
+    end
   end
 
   describe "#on_unsubscribe" do
