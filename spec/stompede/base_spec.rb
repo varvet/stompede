@@ -33,8 +33,8 @@ describe Stompede::Base do
   describe "#on_close" do
     it "is called when a socket is closed" do
       connector = Stompede::Connector.new(app)
-      connector.async.open(server_io)
       monitor = CrashMonitor.new(connector)
+      connector.async.open(server_io)
 
       client_io.close
 
@@ -45,20 +45,26 @@ describe Stompede::Base do
 
     it "is called even when app throws an error" do
       connector = Stompede::Connector.new(TestApp.new(latch, error: :on_open))
+      monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
       session = await(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
       client_io.should be_eof
+
+      expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
     end
 
     it "closes socket even when on_close dies" do
       connector = Stompede::Connector.new(TestApp.new(latch, error: [:on_open, :on_close]))
+      monitor = CrashMonitor.new(connector)
       connector.async.open(server_io)
 
       session = await(:on_close).first
       session.should be_an_instance_of(Stompede::Session)
       client_io.should be_eof
+
+      expect { monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
     end
   end
 
@@ -88,8 +94,8 @@ describe Stompede::Base do
 
     it "replies with an ERROR frame when the handler fails" do
       connector = Stompede::Connector.new(TestApp.new(latch, error: :on_connect))
-      connector.async.open(server_io)
       monitor = CrashMonitor.new(connector)
+      connector.async.open(server_io)
 
       client_io.write(Stompede::Stomp::Message.new("CONNECT", { "foo" => "Bar" }, "").to_str)
       message = parse_message(client_io)
