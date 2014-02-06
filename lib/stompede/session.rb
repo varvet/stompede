@@ -5,6 +5,10 @@ module Stompede
       @subscriptions = {}
     end
 
+    def subscriptions
+      @subscriptions.values
+    end
+
     def subscribe(frame)
       subscription = Subscription.new(self, frame)
       subscription.validate!

@@ -67,6 +67,9 @@ module Stompede
       end
     ensure
       socket.close
+      session.subscriptions.each do |subscription|
+        @app.on_unsubscribe(session, subscription)
+      end
       @app.on_close(session)
     end
   end
