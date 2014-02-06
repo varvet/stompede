@@ -1,5 +1,7 @@
 module Stompede
   class Subscription
+    attr_reader :session
+
     def initialize(session, frame)
       @session = session
       @frame = frame
