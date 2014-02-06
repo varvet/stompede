@@ -1,4 +1,7 @@
 module Helpers
+  extend RSpec::Matchers::DSL
+  extend self
+
   class Latch
     def initialize
       @queue = Queue.new
@@ -61,6 +64,16 @@ module Helpers
     end
   rescue Timeout::Error
     raise "Parsing message timed out!"
+  end
+
+  matcher :receive_error do |klass, body|
+    match do |io|
+      message = Helpers.parse_message(io)
+      message.command.should eq("ERROR")
+      message["content-type"].should eq("text/plain")
+      message.body.should =~ Regexp.new(Regexp.quote("#{klass}: #{body}"))
+      io.should be_eof
+    end
   end
 end
 
