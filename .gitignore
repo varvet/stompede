@@ -24,3 +24,4 @@ spec/profile
 mkmf.log
 Makefile
 tmp/
+spec/spec.log

@@ -1,4 +1,4 @@
-class TestApp < Stompede::Base
+class TestApp
   def initialize(latch)
     @latch = latch
   end
@@ -13,6 +13,16 @@ class TestApp < Stompede::Base
 
   def on_connect(session, message)
     @latch.push [:on_connect, session, message]
+  end
+end
+
+class ErrorApp
+  MooError = Class.new(StandardError)
+  def initialize(cause)
+    @cause = cause
+  end
+  [:on_open, :on_connect, :on_subscribe, :on_send, :on_unsubscribe, :on_disconnect, :on_close].each do |m|
+    define_method(m) { |*args| raise MooError, "MOOOO!" if @cause == m }
   end
 end
 
@@ -66,6 +76,22 @@ describe Stompede::Base do
       message["version"].should eq("1.2")
       message["server"].should eq("Stompede/#{Stompede::VERSION}")
       message["session"].should match(/\A[a-f0-9\-]{36}\z/)
+    end
+
+    it "replies with an ERROR frame when the handler fails" do
+      connector = Stompede::Connector.new(ErrorApp.new(:on_connect))
+      connector.async.open(server_io)
+      monitor = CrashMonitor.new(connector)
+
+      client_io.write(Stompede::Stomp::Message.new("CONNECT", { "foo" => "Bar" }, "").to_str)
+      message = parse_message(client_io)
+      message.command.should eq("ERROR")
+      message["version"].should eq("1.2")
+      message["content-type"].should eq("text/plain")
+      message.body.should match("MooError: MOOOO!")
+      client_io.should be_eof
+
+      expect { monitor.wait_for_crash! }.to raise_error(ErrorApp::MooError, "MOOOO!")
     end
   end
 end

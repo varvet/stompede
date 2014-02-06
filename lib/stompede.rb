@@ -17,6 +17,7 @@ end
 
 module Stompede
   BUFFER_SIZE = 10 * 1024
+  STOMP_VERSION = "1.2" # version of the STOMP protocol we support
 
   class Session
     def initialize(socket)
@@ -52,9 +53,17 @@ module Stompede
   class Connector
     include Celluloid::IO
 
+    class Disconnected < IOError; end
+
+    def safe_io
+      yield
+    rescue IOError
+      raise Disconnected, "client disconnected"
+    end
+
     def initialize(app)
       @app = app
-      link(@app)
+      link(@app) if @app.is_a?(Celluloid::Actor)
     end
 
     def open(socket)
@@ -64,23 +73,35 @@ module Stompede
       @app.on_open(session)
 
       loop do
-        chunk = socket.readpartial(Stompede::BUFFER_SIZE)
+        chunk = safe_io { socket.readpartial(Stompede::BUFFER_SIZE) }
         parser.parse(chunk) do |message|
           if message.command == "CONNECT"
-            @app.on_connect(session, message)
-            headers = {
-              "version" => "1.2",
-              "server" => "Stompede/#{Stompede::VERSION}",
-              "session" => SecureRandom.uuid
-            }
-            socket.write(Stomp::Message.new("CONNECTED", headers, "").to_str)
+            begin
+              @app.on_connect(session, message)
+            rescue => e
+              headers = {
+                "version" => STOMP_VERSION,
+                "content-type" => "text/plain"
+              }
+              safe_io { socket.write(Stomp::Message.new("ERROR", headers, "#{e.class}: #{e.message}\n\n#{e.backtrace.join("\n")}").to_str) }
+              raise
+            else
+              headers = {
+                "version" => STOMP_VERSION,
+                "server" => "Stompede/#{Stompede::VERSION}",
+                "session" => SecureRandom.uuid
+              }
+              safe_io { socket.write(Stomp::Message.new("CONNECTED", headers, "").to_str) }
+            end
           end
           #@app.dispatch(message, session)
         end
       end
-    rescue => e
+    rescue Disconnected
+      # ignore
+    ensure
       @app.on_close(session) rescue nil
-      raise unless e.is_a?(EOFError)
+      socket.close
     end
   end
 end
