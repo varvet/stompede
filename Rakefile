@@ -45,7 +45,6 @@ namespace :ragel do
     sh "dot -Tpng -O tmp/parser.dot"
     rm "tmp/parser.dot"
     sh "open tmp/parser.dot.png"
-    rm "tmp/parser.dot.png"
   end
 end
 
