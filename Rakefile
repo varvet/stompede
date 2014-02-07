@@ -19,12 +19,16 @@ rule ".c" => %w[.c.rl parser_common.rl] do |t|
 end
 
 desc "ragel machines"
-task :compile => %w[lib/stompede/stomp/parser.rb]
+task :compile => %w[lib/stompede/stomp/ruby_parser.rb]
 
-Rake::ExtensionTask.new do |ext|
-  ext.name = "parser_native"
-  ext.ext_dir = "ext/stompede"
-  ext.lib_dir = "lib/stompede/stomp"
+unless RUBY_ENGINE == "jruby"
+  task :compile => %w[ext/stompede/c_parser.c]
+
+  Rake::ExtensionTask.new do |ext|
+    ext.name = "c_parser"
+    ext.ext_dir = "ext/stompede"
+    ext.lib_dir = "lib/stompede/stomp"
+  end
 end
 
 desc "ragel machines"
@@ -35,7 +39,7 @@ end
 
 namespace :ragel do
   desc "Show stomp parser state machine as an image"
-  task :show => "lib/stompede/stomp/parser.rb" do |t|
+  task :show => "lib/stompede/stomp/ruby_parser.rb" do |t|
     mkdir_p "tmp"
     ragel "-V", "-p", t.prerequisite_tasks[0].source, "-o", "tmp/parser.dot"
     sh "dot -Tpng -O tmp/parser.dot"

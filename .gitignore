@@ -8,7 +8,6 @@ InstalledFiles
 _yardoc
 coverage
 doc/
-lib/stompede/stomp/parser.rb
 lib/bundler/man
 pkg
 rdoc
@@ -25,3 +24,8 @@ mkmf.log
 Makefile
 tmp/
 spec/spec.log
+
+# Ragel
+lib/stompede/stomp/ruby_parser.rb
+lib/stompede/stomp/c_parser.rb
+ext/stompede/c_parser.c
