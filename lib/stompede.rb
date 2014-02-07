@@ -4,10 +4,9 @@ require "celluloid/io"
 require "securerandom"
 
 require "stompede/version"
-
 require "stompede/error"
-require "stompede/stomp/parser"
-require "stompede/stomp/message"
+
+require "stompede/stomp"
 
 require "stompede/connector"
 require "stompede/base"

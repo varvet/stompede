@@ -131,20 +131,18 @@ module Stompede
         state.mark_content_length = mark_content_length
 
         if cs == RubyParser.error
-          Stomp::Parser.build_error(chunk, p)
+          Stomp.build_parse_error(chunk, p)
         else
           nil
         end
       end
 
-      def initialize(max_message_size)
+      def initialize(max_message_size = Stomp.max_message_size)
         @state = State.new
-        @max_message_size = max_message_size
+        @max_message_size = Integer(max_message_size)
       end
 
       # Parse a chunk.
-      #
-      #
       #
       # @param [String] chunk
       # @yield [message]
