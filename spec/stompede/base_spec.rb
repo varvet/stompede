@@ -1,9 +1,9 @@
 class TestApp
   class MooError < StandardError; end
 
-  def initialize(latch, error: nil)
+  def initialize(latch, options = {})
     @latch = latch
-    @error = Array(error)
+    @error = Array(options[:error])
   end
 
   [:on_open, :on_connect, :on_subscribe, :on_send, :on_unsubscribe, :on_disconnect, :on_close].each do |m|

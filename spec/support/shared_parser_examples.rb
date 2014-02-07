@@ -145,7 +145,7 @@ RSpec.shared_examples_for "a stompede parser" do
 
     describe "failing on invalid messages" do
       it "raises an error if no block is given" do
-        expect { parser.parse("CONNECT\n\n\x00") }.to raise_error(LocalJumpError, /no block given/)
+        expect { parser.parse("CONNECT\n\n\x00") }.to raise_error(LocalJumpError)
       end
 
       specify "invalid command" do
