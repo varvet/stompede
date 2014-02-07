@@ -1,7 +1,7 @@
 %%{
   machine message;
 
-  getkey chunk.getbyte(p);
+  getkey (chunk.getbyte(p) ^ 128) - 128;
 
   action mark {
     mark = p

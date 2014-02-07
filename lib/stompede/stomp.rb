@@ -53,7 +53,7 @@ module Stompede
         ctx = 7
         min = [0, index - ctx].max
         len = ctx + 1 + ctx
-        context = chunk.byteslice(min, len)
+        context = chunk.byteslice(min, len).force_encoding("BINARY")
 
         idx = index - min
         chr = context[idx]

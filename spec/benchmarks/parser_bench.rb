@@ -23,7 +23,7 @@ bench "Parser.parse with headers and small body", "CONNECT\ncontent-length:4\n\n
   parse_one(message)
 end
 
-large_body = "b" * (Stompede::Stomp::Parser.max_message_size - 50) # make room for headers
+large_body = "b" * (Stompede::Stomp.max_message_size - 50) # make room for headers
 bench "Parser.parse with large body", "CONNECT\n\n#{large_body}\x00" do |message|
   parse_one(message)
 end

@@ -141,6 +141,12 @@ RSpec.shared_examples_for "a stompede parser" do
         messages.length.should eq(1)
         messages[0].body.should eq "bo\x00dy"
       end
+
+      it "can parse multibyte body" do
+        messages = parse_all("MESSAGE\n\nWhat üp\x00") # UTF-8
+        messages.length.should eq(1)
+        messages[0].body.should eq "What üp"
+      end
     end
 
     describe "failing on invalid messages" do
