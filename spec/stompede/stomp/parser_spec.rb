@@ -1,17 +1,10 @@
 describe Stompede::Stomp::Parser do
-  let(:messages) { [] }
-  let(:parser) { Stompede::Stomp::Parser.new { |m| messages << m } }
-
-  describe ".new" do
-    it "raises an error if no block is given" do
-      expect { Stompede::Stomp::Parser.new }.to raise_error(ArgumentError, /no block given/)
-    end
-  end
+  let(:parser) { Stompede::Stomp::Parser.new }
 
   context "#parse" do
     def parse_all(data)
-      messages.clear
-      parser.parse(data)
+      messages = []
+      parser.parse(data) { |m| messages << m }
       messages
     end
 
@@ -151,6 +144,10 @@ describe Stompede::Stomp::Parser do
     end
 
     describe "failing on invalid messages" do
+      it "raises an error if no block is given" do
+        expect { parser.parse("CONNECT\n\n\x00") }.to raise_error(LocalJumpError, /no block given/)
+      end
+
       specify "invalid command" do
         expect { parser.parse("CONNET\n\n\x00") }.to raise_error(Stompede::ParseError)
       end

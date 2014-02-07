@@ -22,17 +22,11 @@ module Stompede
         #   end
         #
         # @param [Integer] max_message_size (Parser.max_message_size)
-        # @yield [message]
-        # @yieldparam [Stompede::Stomp::Message] message
         # @return [#parse]
         #
         # @raise [ArgumentError] if no block is given
-        def new(max_message_size = max_message_size, &block)
-          unless block_given?
-            raise ArgumentError, "no block given"
-          end
-
-          @default.new(max_message_size, &block)
+        def new(max_message_size = max_message_size)
+          @default.new(max_message_size)
         end
 
         # Create a parse error from a string chunk and an index.

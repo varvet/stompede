@@ -1,13 +1,13 @@
 %%{
   machine message;
 
-  getkey data.getbyte(p);
+  getkey chunk.getbyte(p);
 
   action mark {
     mark = p
   }
   action mark_key {
-    mark_key = data.byteslice(mark, p - mark)
+    mark_key = chunk.byteslice(mark, p - mark)
     mark = nil
   }
   action mark_message {
@@ -20,17 +20,17 @@
   }
 
   action write_command {
-    mark_message.write_command(data.byteslice(mark, p - mark))
+    mark_message.write_command(chunk.byteslice(mark, p - mark))
     mark = nil
   }
 
   action write_header {
-    mark_message.write_header(mark_key, data.byteslice(mark, p - mark))
+    mark_message.write_header(mark_key, chunk.byteslice(mark, p - mark))
     mark_key = mark = nil
   }
 
   action write_body {
-    mark_message.write_body(data.byteslice(mark, p - mark))
+    mark_message.write_body(chunk.byteslice(mark, p - mark))
     mark = nil
   }
 
@@ -73,6 +73,7 @@ module Stompede
         end
 
         # You want documentation? HAHA.
+        attr_accessor :chunk
         attr_accessor :p
         attr_accessor :cs
         attr_accessor :error
@@ -90,15 +91,21 @@ module Stompede
 
       # Parse a chunk of Stomp-formatted data into a Message.
       #
-      # @param [String] data
+      # @param [String] chunk
       # @param [State] state previous parser state, or nil for initial state
       # @param [Integer] max_message_size
       # @yield [message] yields each message as it is parsed
       # @yieldparam message [Stomp::Message]
-      def self._parse(data, offset, state, max_message_size)
-        pe = data.bytesize # special
+      def self._parse(chunk, state, max_message_size)
+        if state.chunk
+          p = state.chunk.bytesize
+          chunk = state.chunk << chunk
+        else
+          p = 0
+        end
 
-        p = offset
+        pe = chunk.bytesize # special
+
         cs = state.cs
         mark = state.mark
         mark_key = state.mark_key
@@ -108,7 +115,14 @@ module Stompede
 
         %% write exec;
 
-        state.p = p
+        if mark
+          state.p = chunk.bytesize
+          state.chunk = chunk
+        else
+          state.p = 0
+          state.chunk = nil
+        end
+
         state.cs = cs
         state.mark = mark
         state.mark_key = mark_key
@@ -116,34 +130,28 @@ module Stompede
         state.mark_message_size = mark_message_size
         state.mark_content_length = mark_content_length
 
-        state.mark || pe
+        if cs == RubyParser.error
+          Stomp::Parser.build_error(chunk, p)
+        else
+          nil
+        end
       end
 
-      def initialize(max_message_size, &handler)
+      def initialize(max_message_size)
         @state = State.new
-        @handler = handler
-
         @max_message_size = max_message_size
       end
 
+      # Parse a chunk.
+      #
+      #
+      #
+      # @param [String] chunk
+      # @yield [message]
+      # @yieldparam [Stomp::Message] message
       def parse(chunk)
-        unless @error
-          if @chunk
-            offset = @chunk.bytesize
-            chunk = @chunk << chunk
-          else
-            offset = 0
-          end
-
-          consumed_until = self.class._parse(chunk, offset, @state, @max_message_size, &@handler)
-
-          if @state.cs == RubyParser.error
-            @error = Stomp::Parser.build_error(chunk, @state.p)
-          elsif consumed_until < chunk.bytesize
-            @chunk = chunk
-          else
-            @chunk = nil
-          end
+        @error ||= self.class._parse(chunk, @state, @max_message_size) do |message|
+          yield message
         end
 
         raise @error if @error
