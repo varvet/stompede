@@ -12,7 +12,7 @@ describe Stompede::Stomp::Message do
 
     it "raises an error if invalid content length defined" do
       message = Stompede::Stomp::Message.new("CONNECT", { "content-length" => "LAWL" }, nil)
-      expect { message.content_length }.to raise_error(ArgumentError, /LAWL/)
+      expect { message.content_length }.to raise_error(ArgumentError)
     end
   end
 
