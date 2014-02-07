@@ -83,43 +83,55 @@
   write data noprefix;
 }%%
 
+typedef struct {
+  long long max_message_size;
+
+  const char *chunk;
+  const char *p;
+  int cs;
+  size_t mark;
+  const char *mark_key;
+  VALUE mark_message;
+  size_t mark_message_size;
+  size_t mark_message_content_length;
+} parser_state_t;
+
 VALUE cMessage = Qnil;
 
-/* Parse a chunk of data.
- *
- * @param [String] data
- * @param [Parser] state
- * @param [Integer] offset (0)
- *
- * @return [
- */
-VALUE stompede_parse(VALUE self, VALUE data, VALUE state, VALUE offset) {
-  UNUSED(self);
-  UNUSED(state);
-  UNUSED(offset);
+static void parser_free(parser_state_t *state) {
+  // TODO: free memory inside struct!
+  xfree(state);
+}
 
-  char *p = RSTRING_PTR(data) + FIX2LONG(offset);
-  char *pe = RSTRING_PTR(data) + RSTRING_LEN(data);
-  int cs = READ(state, "current_state");
-  char *mark = NULL;
+static void parser_mark(parser_state_t *state) {
+  rb_gc_mark(state->mark_message);
+}
 
-  VALUE message = Qnil;
-  VALUE mk = Qnil;
-  long content_length = -1;
-  long message_size = -1;
-  long max_message_size = FIX2LONG(READ(state, "max_message_size"));
+static VALUE parser_alloc(VALUE klass) {
+  parser_state_t *state = ALLOC(parser_state_t);
+  state->mark_message = Qtrue;
+  return Data_Wrap_Struct(klass, parser_mark, parser_free, state);
+}
 
-  %% write exec;
+static VALUE parser_initialize(int argc, VALUE *argv, VALUE self) {
+  VALUE max_message_size;
+  // rb_scan_args(argc, argv, "01", &max_message_size);
+}
 
-  return Qnil;
+static VALUE parser_message(VALUE self) {
+  parser_state_t *state;
+  Data_Get_Struct(self, parser_state_t, state);
+  return state->mark_message;
 }
 
 void Init_c_parser(void) {
   VALUE mStompede = rb_const_get(rb_cObject, rb_intern("Stompede"));
   VALUE mStomp = rb_const_get(mStompede, rb_intern("Stomp"));
-  VALUE cParser = rb_define_class_under(mStomp, "CParser", rb_cObject);
-
   cMessage = rb_const_get(mStomp, rb_intern("Message"));
 
-  rb_define_singleton_method(cParser, "parse", stompede_parse, 3);
+  VALUE cParser = rb_define_class_under(mStomp, "CParser", rb_cObject);
+  rb_define_alloc_func(cParser, parser_alloc);
+
+  rb_define_method(cParser, "initialize", parser_initialize, -1);
+  rb_define_method(cParser, "state_check", parser_message, 0);
 }

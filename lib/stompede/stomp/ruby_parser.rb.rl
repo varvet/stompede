@@ -65,6 +65,7 @@ module Stompede
         def initialize
           @p = 0
           @cs = RubyParser.start
+          @chunk = nil
           @mark = nil
           @mark_key = nil
           @mark_message = nil
@@ -76,7 +77,6 @@ module Stompede
         attr_accessor :chunk
         attr_accessor :p
         attr_accessor :cs
-        attr_accessor :error
         attr_accessor :mark
         attr_accessor :mark_key
         attr_accessor :mark_message

@@ -1,6 +1,11 @@
 require "stompede/stomp/message"
 require "stompede/stomp/ruby_parser"
 
+case RUBY_ENGINE
+when "ruby", "rbx"
+  require "stompede/stomp/c_parser"
+end
+
 module Stompede
   module Stomp
     class Error < StandardError
@@ -29,7 +34,9 @@ module Stompede
     class MessageSizeExceeded < ParseError
     end
 
-    Parser = RubyParser
+    DEFAULTS = {}
+
+    Parser = DEFAULTS[RUBY_ENGINE] || RubyParser
 
     @max_message_size = 1024 * 10 # 10KB
 

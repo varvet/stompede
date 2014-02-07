@@ -1,4 +1,3 @@
-require "rake/extensiontask"
 require "bundler/gem_tasks"
 
 def ragel(*args)
@@ -22,6 +21,7 @@ desc "ragel machines"
 task :compile => %w[lib/stompede/stomp/ruby_parser.rb]
 
 unless RUBY_ENGINE == "jruby"
+  require "rake/extensiontask"
   task :compile => %w[ext/stompede/c_parser.c]
 
   Rake::ExtensionTask.new do |ext|
