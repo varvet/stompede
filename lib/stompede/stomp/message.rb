@@ -71,11 +71,8 @@ module Stompede
         message = "".force_encoding("UTF-8")
         message << command << "\n"
 
-        outgoing_headers = if headers.empty? and body.include?("\x00")
-          headers.merge("content-length" => "#{body.bytesize}")
-        else
-          headers
-        end
+        outgoing_headers = headers.dup
+        outgoing_headers["content-length"] = body.bytesize
         outgoing_headers.each do |key, value|
           message << serialize_header(key) << ":" << serialize_header(value) << "\n"
         end
@@ -102,7 +99,7 @@ module Stompede
 
       # inverse of #translate_header
       def serialize_header(value)
-        value.gsub(HEADER_REVERSE_TRANSLATIONS_KEYS, HEADER_REVERSE_TRANSLATIONS)
+        value.to_s.gsub(HEADER_REVERSE_TRANSLATIONS_KEYS, HEADER_REVERSE_TRANSLATIONS)
       end
     end
   end
