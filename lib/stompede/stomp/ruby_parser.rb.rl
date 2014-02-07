@@ -64,7 +64,7 @@ module Stompede
       class State
         def initialize
           @p = 0
-          @cs = nil
+          @cs = RubyParser.start
           @mark = nil
           @mark_key = nil
           @mark_message = nil
@@ -121,7 +121,6 @@ module Stompede
 
       def initialize(max_message_size, &handler)
         @state = State.new
-        @state.cs = RubyParser.start
         @handler = handler
 
         @max_message_size = max_message_size
