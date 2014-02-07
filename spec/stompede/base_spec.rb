@@ -186,7 +186,7 @@ describe Stompede::Base do
       send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
       send_message(client_io, "UNSUBSCRIBE", "id" => "1", "foo" => "Bar")
 
-      _, subscribe_subscription, _ = latch.receive(:on_subscribe)
+      subscribe_subscription = latch.receive(:on_subscribe)[1]
       session, unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
 
       session.should be_an_instance_of(Stompede::Session)
@@ -233,7 +233,7 @@ describe Stompede::Base do
     it "is called if the session has a subscription and the socket is closed" do
       send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
 
-      _, subscribe_subscription, _ = latch.receive(:on_subscribe)
+      subscribe_subscription = latch.receive(:on_subscribe)[1]
       client_io.close
       session, unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
 
@@ -248,7 +248,7 @@ describe Stompede::Base do
     it "is called if the session has a subscription and the app dies", error: :on_send do
       send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
 
-      _, subscribe_subscription, _ = latch.receive(:on_subscribe)
+      subscribe_subscription = latch.receive(:on_subscribe)[1]
       send_message(client_io, "SEND")
       session, unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
 
