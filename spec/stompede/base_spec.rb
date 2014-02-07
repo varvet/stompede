@@ -245,4 +245,23 @@ describe Stompede::Base do
       client_io.should be_eof
     end
   end
+
+  describe Stompede::Subscription do
+    describe "#message" do
+      it "sends a message to the client" do
+        send_message(client_io, "SUBSCRIBE", "id" => "1234", "destination" => "/foo")
+        subscription = latch.receive(:on_subscribe)[1]
+        subscription.message("What üp?", "foo" => "Bar")
+
+        message = parse_message(client_io)
+        message.command.should eq("MESSAGE")
+        message.destination.should eq("/foo")
+        message["subscription"].should eq("1234")
+        message["message-id"].should match(/\A[a-f0-9\-]{36}\z/)
+        message.content_length.should eq(9)
+      end
+
+      it "does nothing if the client is no longer connected"
+    end
+  end
 end

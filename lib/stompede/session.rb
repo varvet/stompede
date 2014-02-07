@@ -1,12 +1,19 @@
 module Stompede
   class Session
     def initialize(socket)
+      @mutex = Mutex.new
       @socket = socket
       @subscriptions = {}
     end
 
     def subscriptions
       @subscriptions.values
+    end
+
+    def write(value)
+      @mutex.synchronize do
+        @socket.write(value.to_str)
+      end
     end
 
     def subscribe(frame)
