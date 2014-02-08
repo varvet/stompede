@@ -14,7 +14,7 @@ rule ".rb" => %w[.rb.rl parser_common.rl] do |t|
 end
 
 rule ".c" => %w[.c.rl parser_common.rl] do |t|
-  ragel "-F1", "-C", t.source, "-o", t.name
+  ragel "-G2", "-C", t.source, "-o", t.name
 end
 
 desc "ragel machines"
