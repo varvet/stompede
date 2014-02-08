@@ -8,7 +8,7 @@
 
 #define UNUSED(x) (void)(x)
 #define MARK_LEN (p - mark)
-#define MARK_STR_NEW() rb_str_new(mark, MARK_LEN)
+#define MARK_STR_NEW() rb_external_str_new(mark, MARK_LEN)
 
 #define true 1
 #define false 0
