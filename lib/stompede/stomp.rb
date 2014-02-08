@@ -1,3 +1,4 @@
+require "stompede/stomp/error"
 require "stompede/stomp/message"
 require "stompede/stomp/ruby_parser"
 
@@ -8,34 +9,7 @@ end
 
 module Stompede
   module Stomp
-    class Error < StandardError
-    end
-
-    # Errors raised by the Stomp::Parser.
-    class ParseError < Error
-    end
-
-    # Raised when the Stomp::Parser tries to buffer
-    # more than what has been allowed.
-    #
-    # Protects against malicious clients trying to
-    # fill the available server memory by sending an
-    # unbounded amount of data.
-    class BufferLimitExceeded < ParseError
-    end
-
-    # Raised when the Stomp::Parser has reached the
-    # limit for how large a Stomp::Message may be.
-    #
-    # Protects against malicious clients trying to
-    # fill the available memory by sending very large
-    # messages, for example by sending an unlimited
-    # amount of headers.
-    class MessageSizeExceeded < ParseError
-    end
-
     DEFAULTS = {}
-
     Parser = DEFAULTS[RUBY_ENGINE] || RubyParser
 
     @max_message_size = 1024 * 10 # 10KB

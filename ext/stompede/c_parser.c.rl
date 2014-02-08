@@ -15,8 +15,7 @@
 
 typedef struct {
   VALUE error;
-
-  size_t max_message_size;
+  long max_message_size;
 
   const char *chunk;
   const char *p;
@@ -24,12 +23,13 @@ typedef struct {
   const char *mark;
   VALUE mark_key;
   VALUE mark_message;
-  size_t mark_message_size;
+  long mark_message_size;
   long mark_content_length;
 } parser_state_t;
 
 VALUE mStomp = Qnil;
 VALUE cMessage = Qnil;
+VALUE eMessageSizeExceeded = Qnil;
 ID g_new;
 ID g_write_command;
 ID g_write_header;
@@ -90,6 +90,9 @@ ID g_max_message_size;
 
   action check_message_size {
     mark_message_size += 1;
+    if (mark_message_size > max_message_size) {
+      rb_raise(eMessageSizeExceeded, "");
+    }
   }
 
   action finish_message {
@@ -159,7 +162,7 @@ static VALUE parser_parse(VALUE self, VALUE chunk) {
     pe = chunk.bytesize # special
     */
 
-    // size_t max_message_size = state->max_message_size;
+    long max_message_size = state->max_message_size;
     const char *p = RSTRING_PTR(chunk);
     const char *pe = p + RSTRING_LEN(chunk);
 
@@ -167,7 +170,7 @@ static VALUE parser_parse(VALUE self, VALUE chunk) {
     const char *mark = state->mark;
     VALUE mark_key = state->mark_key;
     VALUE mark_message = state->mark_message;
-    size_t mark_message_size = state->mark_message_size;
+    long mark_message_size = state->mark_message_size;
     long mark_content_length = state->mark_content_length;
 
     %% write exec;
@@ -207,6 +210,7 @@ void Init_c_parser(void) {
 
   mStomp = rb_const_get(mStompede, rb_intern("Stomp"));
   cMessage = rb_const_get(mStomp, rb_intern("Message"));
+  eMessageSizeExceeded = rb_const_get(mStomp, rb_intern("MessageSizeExceeded"));
 
   g_new = rb_intern("new");
   g_write_command = rb_intern("write_command");
