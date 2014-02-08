@@ -1,3 +1,4 @@
+# encoding: UTF-8
 RSpec.shared_examples_for "a stompede parser" do
   let(:parser) { described_class.new }
 
