@@ -1,3 +1,4 @@
+# encoding: UTF-8
 describe Stompede::Base do
   let(:app) { TestApp.new(latch) }
   let(:sockets) { UNIXSocket.pair }
