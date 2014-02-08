@@ -25,7 +25,7 @@ typedef struct {
   VALUE mark_key;
   VALUE mark_message;
   size_t mark_message_size;
-  size_t mark_message_content_length;
+  long mark_content_length;
 } parser_state_t;
 
 VALUE mStomp = Qnil;
@@ -34,6 +34,7 @@ ID g_new;
 ID g_write_command;
 ID g_write_header;
 ID g_write_body;
+ID g_content_length;
 ID g_build_parse_error;
 ID g_max_message_size;
 
@@ -66,14 +67,12 @@ ID g_max_message_size;
   }
 
   action finish_headers {
-    /*
-    VALUE length = rb_funcall(message, rb_intern("content_length"), 0);
-    if (FIXNUM_P(length)) {
-      content_length = FIX2LONG(length);
+    VALUE length = rb_funcall(mark_message, g_content_length, 0);
+    if ( ! NIL_P(length)) {
+      mark_content_length = NUM2LONG(length);
     } else {
-      content_length = -1;
+      mark_content_length = -1;
     }
-    */
   }
 
   action write_body {
@@ -82,13 +81,11 @@ ID g_max_message_size;
   }
 
   action consume_null {
-    false
-    /* ((content_length != -1) && (MARK_LEN < content_length)) */
+    ((mark_content_length != -1) && (MARK_LEN < mark_content_length))
   }
 
   action consume_octet {
-    true
-    /* ((content_length == -1) || (MARK_LEN < content_length)) */
+    ((mark_content_length == -1) || (MARK_LEN < mark_content_length))
   }
 
   action check_message_size {
@@ -141,7 +138,7 @@ static VALUE parser_initialize(int argc, VALUE *argv, VALUE self) {
   state->mark_key = Qnil;
   state->mark_message = Qnil;
   state->mark_message_size = 0;
-  state->mark_message_content_length = 0;
+  state->mark_content_length = 0;
 
   return self;
 }
@@ -171,7 +168,7 @@ static VALUE parser_parse(VALUE self, VALUE chunk) {
     VALUE mark_key = state->mark_key;
     VALUE mark_message = state->mark_message;
     size_t mark_message_size = state->mark_message_size;
-    // mark_content_length = state->mark_content_length;
+    long mark_content_length = state->mark_content_length;
 
     %% write exec;
 
@@ -190,7 +187,7 @@ static VALUE parser_parse(VALUE self, VALUE chunk) {
     state->mark_key = mark_key;
     state->mark_message = mark_message;
     state->mark_message_size = mark_message_size;
-    // state->mark_content_length = mark_content_length;
+    state->mark_content_length = mark_content_length;
 
     if (cs == error) {
       long index = p - RSTRING_PTR(chunk);
@@ -215,6 +212,7 @@ void Init_c_parser(void) {
   g_write_command = rb_intern("write_command");
   g_write_header = rb_intern("write_header");
   g_write_body = rb_intern("write_body");
+  g_content_length = rb_intern("content_length");
   g_build_parse_error = rb_intern("build_parse_error");
   g_max_message_size = rb_intern("max_message_size");
 
