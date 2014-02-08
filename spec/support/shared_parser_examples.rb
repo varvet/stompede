@@ -198,7 +198,7 @@ RSpec.shared_examples_for "a stompede parser" do
 
       specify "total size bigger than global max message size setting" do
         Stompede::Stomp.stub(:max_message_size => 30)
-        parser = Stompede::Stomp::Parser.new
+        parser = described_class.new
         parser.parse("CONNECT\n") # 8
         parser.parse("header:value\n") # 21
         expect {
@@ -207,7 +207,7 @@ RSpec.shared_examples_for "a stompede parser" do
       end
 
       specify "total size bigger than local max message size setting" do
-        parser = Stompede::Stomp::Parser.new(max_message_size = 30)
+        parser = described_class.new(max_message_size = 30)
         parser.parse("CONNECT\n") # 8
         parser.parse("header:value\n") # 21
         expect {
