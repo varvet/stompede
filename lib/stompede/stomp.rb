@@ -9,8 +9,11 @@ end
 
 module Stompede
   module Stomp
-    DEFAULTS = {}
-    Parser = DEFAULTS[RUBY_ENGINE] || RubyParser
+    Parser = if defined?(CParser)
+      CParser
+    else
+      RubyParser
+    end
 
     @max_message_size = 1024 * 10 # 10KB
 
