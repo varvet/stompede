@@ -17,7 +17,7 @@ typedef struct {
   VALUE error;
   long max_message_size;
 
-  const char *chunk;
+  VALUE chunk;
   const char *p;
   int cs;
   const char *mark;
@@ -114,6 +114,7 @@ static void parser_mark(parser_state_t *state) {
   rb_gc_mark(state->error);
   rb_gc_mark(state->mark_key);
   rb_gc_mark(state->mark_message);
+  rb_gc_mark(state->chunk);
 }
 
 static VALUE parser_alloc(VALUE klass) {
@@ -134,7 +135,7 @@ static VALUE parser_initialize(int argc, VALUE *argv, VALUE self) {
 
   state->error = Qnil;
   state->max_message_size = FIX2LONG(max_message_size);
-  state->chunk = NULL;
+  state->chunk = Qnil;
   state->p = NULL;
   state->cs = start;
   state->mark = NULL;
@@ -146,28 +147,31 @@ static VALUE parser_initialize(int argc, VALUE *argv, VALUE self) {
   return self;
 }
 
-static VALUE parser_parse(VALUE self, VALUE chunk) {
+static VALUE parser_parse(VALUE self, VALUE new_chunk) {
   parser_state_t *state;
   Data_Get_Struct(self, parser_state_t, state);
 
   if (NIL_P(state->error)) {
-    /*
-    if state.chunk
-      p = state.chunk.bytesize
-      chunk = state.chunk << chunk
-    else
-      p = 0
-    end
+    VALUE chunk = Qnil;
+    const char *p = NULL;
+    const char *mark = NULL;
 
-    pe = chunk.bytesize # special
-    */
+    if ( ! NIL_P(state->chunk)) {
+      long offset = RSTRING_LEN(state->chunk);
+      long mark_offset = state->mark - RSTRING_PTR(state->chunk);
 
+      chunk = rb_str_append(state->chunk, new_chunk);
+      p = RSTRING_PTR(chunk) + offset;
+      mark = RSTRING_PTR(chunk) + mark_offset;
+    } else {
+      chunk = new_chunk;
+      p = RSTRING_PTR(chunk);
+    }
+
+    const char *pe = RSTRING_END(chunk);
     long max_message_size = state->max_message_size;
-    const char *p = RSTRING_PTR(chunk);
-    const char *pe = p + RSTRING_LEN(chunk);
 
     int cs = state->cs;
-    const char *mark = state->mark;
     VALUE mark_key = state->mark_key;
     VALUE mark_message = state->mark_message;
     long mark_message_size = state->mark_message_size;
@@ -175,15 +179,11 @@ static VALUE parser_parse(VALUE self, VALUE chunk) {
 
     %% write exec;
 
-    /*
-    if mark
-      state.p = chunk.bytesize
-      state.chunk = chunk
-    else
-      state.p = 0
-      state.chunk = nil
-    end
-    */
+    if (mark != NULL) {
+      state->chunk = chunk;
+    } else {
+      state->chunk = Qnil;
+    }
 
     state->cs = cs;
     state->mark = mark;
