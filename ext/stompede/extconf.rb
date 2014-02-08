@@ -2,7 +2,7 @@
 
 require "mkmf"
 
-$CFLAGS << " -ggdb -O0 -Wextra -DDEBUG_H" # only for development
+$CFLAGS << " -O3"
 
 should_build = true
 should_build &&= have_header "ruby.h"
