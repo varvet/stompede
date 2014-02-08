@@ -63,7 +63,6 @@ module Stompede
     class RubyParser
       class State
         def initialize
-          @p = 0
           @cs = RubyParser.start
           @chunk = nil
           @mark = nil
@@ -75,7 +74,6 @@ module Stompede
 
         # You want documentation? HAHA.
         attr_accessor :chunk
-        attr_accessor :p
         attr_accessor :cs
         attr_accessor :mark
         attr_accessor :mark_key
@@ -116,10 +114,8 @@ module Stompede
         %% write exec;
 
         if mark
-          state.p = chunk.bytesize
           state.chunk = chunk
         else
-          state.p = 0
           state.chunk = nil
         end
 
