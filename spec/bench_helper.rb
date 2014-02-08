@@ -2,24 +2,66 @@ require "bundler/setup"
 require "stompede"
 require "benchmark/ips"
 
-$__benchmarks__ = []
+class Benchpress
+  attr_reader :options
 
-def bench(name, *args, &block)
+  def initialize(options, &body)
+    @options = options
+    instance_exec(self, &body)
+  end
+
+  def name
+    "#{options[:file]}:#{options[:line]} #{options[:desc]}"
+  end
+
+  def setup(&block)
+    @setup = block
+  end
+
+  def code(&block)
+    @code = block
+  end
+
+  def assert(&block)
+    @assert = block
+  end
+
+  def run_initial
+    instance_exec(&@setup) if @setup
+    result = run
+    result = instance_exec(result, &@assert) if @assert
+    unless result
+      raise "#{name} code returns #{result.inspect}"
+    end
+  end
+
+  def run
+    instance_exec(&@code)
+  end
+
+  def to_proc
+    lambda { run }
+  end
+end
+
+def describe(description, &body)
   file, line, _ = caller[0].split(':')
-  $__benchmarks__ << {
+  options = {
+    desc: description,
     file: File.basename(file),
     line: line,
-    name: name,
-    block: proc { block.call(*args) }
   }
+
+  $__benchmarks__ << Benchpress.new(options, &body)
 end
+
+$__benchmarks__ = []
 
 at_exit do
   reports = Benchmark.ips(time = 2) do |x|
-    $__benchmarks__.each do |info|
-      benchname = "#{info[:file]}:#{info[:line]} #{info[:name]}"
-      raise "#{benchname} returned a non-truthy value" unless info[:block].call
-      x.report(benchname, &info[:block])
+    $__benchmarks__.each do |bench|
+      5.times { bench.run_initial }
+      x.report(bench.name, &bench)
     end
   end
 end
