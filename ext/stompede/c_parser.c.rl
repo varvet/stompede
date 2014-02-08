@@ -32,6 +32,7 @@ VALUE mStomp = Qnil;
 VALUE cMessage = Qnil;
 ID g_new;
 ID g_write_command;
+ID g_write_body;
 ID g_build_parse_error;
 ID g_max_message_size;
 
@@ -81,11 +82,8 @@ ID g_max_message_size;
   }
 
   action write_body {
-    /*
-    VALUE body = MARK_STR_NEW;
+    rb_funcall(mark_message, g_write_body, 1, MARK_STR_NEW());
     mark = NULL;
-    rb_funcall(message, rb_intern("write_body"), 1, body);
-    */
   }
 
   action consume_null {
@@ -219,6 +217,7 @@ void Init_c_parser(void) {
 
   g_new = rb_intern("new");
   g_write_command = rb_intern("write_command");
+  g_write_body = rb_intern("write_body");
   g_build_parse_error = rb_intern("build_parse_error");
   g_max_message_size = rb_intern("max_message_size");
 
