@@ -38,7 +38,11 @@ module Stompede
       # @return [Integer, nil]
       def content_length
         if headers.has_key?("content-length")
-          Integer(headers["content-length"])
+          begin
+            Integer(headers["content-length"])
+          rescue ArgumentError
+            raise Stomp::Error, "invalid content length #{headers["content-length"].inspect}"
+          end
         end
       end
 

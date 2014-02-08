@@ -174,6 +174,10 @@ RSpec.shared_examples_for "a stompede parser" do
         expect { parser.parse("CONNECT\ncontent-length:0\n\nx\x00") }.to raise_error(Stompede::Stomp::ParseError)
       end
 
+      specify "invalid content length" do
+        expect { parser.parse("CONNECT\ncontent-length:LAWL\n\nx\x00") }.to raise_error(Stompede::Stomp::Error, /invalid content length "LAWL"/)
+      end
+
       specify "re-trying invocation after an error" do
         first_error = begin
           parser.parse("CONNET")
