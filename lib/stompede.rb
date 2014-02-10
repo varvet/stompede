@@ -8,7 +8,6 @@ require "stompede/error"
 
 require "stompede/stomp"
 
-require "stompede/connector"
 require "stompede/base"
 require "stompede/session"
 require "stompede/subscription"

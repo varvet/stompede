@@ -1,10 +1,12 @@
 class CrashMonitor
   include Celluloid
 
-  def initialize(actor, timeout = 0.5)
-    link actor
-    @actor = actor
+  def initialize(timeout = 0.5)
     @timeout = timeout
+  end
+
+  def observe(actor)
+    link actor
   end
 
   trap_exit :dying_actor
@@ -25,6 +27,8 @@ class CrashMonitor
     reason = wait_for_crash
     abort reason if reason
   end
+
+  alias_method :wait_for_terminate, :wait_for_crash!
 
   def dying_actor(actor, reason)
     @reason = reason

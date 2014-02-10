@@ -1,7 +1,8 @@
-class TestApp
+class TestApp < Stompede::Base
   class MooError < StandardError; end
 
-  def initialize(latch, options = {})
+  def initialize(socket, latch, options = {})
+    super(socket)
     @latch = latch
     @error = Array(options[:error])
   end
