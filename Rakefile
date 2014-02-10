@@ -17,16 +17,29 @@ rule ".c" => %w[.c.rl parser_common.rl] do |t|
   ragel "-G2", "-C", t.source, "-o", t.name
 end
 
+rule ".java" => %w[.java.rl parser_common.rl] do |t|
+  ragel "-T0", "-J", t.source, "-o", t.name
+end
+
 desc "ragel machines"
 task :compile => %w[lib/stompede/stomp/ruby_parser.rb]
 
-unless RUBY_ENGINE == "jruby"
+case RUBY_ENGINE
+when "rbx", "ruby"
   require "rake/extensiontask"
   task :compile => %w[ext/stompede/c_parser.c]
 
   Rake::ExtensionTask.new do |ext|
     ext.name = "c_parser"
     ext.ext_dir = "ext/stompede"
+    ext.lib_dir = "lib/stompede/stomp"
+  end
+when "jruby"
+  require "rake/javaextensiontask"
+  task :compile => %w[ext/java/stompede/stomp/JavaParser.java]
+
+  Rake::JavaExtensionTask.new do |ext|
+    ext.name = "java_parser"
     ext.lib_dir = "lib/stompede/stomp"
   end
 end

@@ -5,6 +5,8 @@ require "stompede/stomp/ruby_parser"
 case RUBY_ENGINE
 when "ruby", "rbx"
   require "stompede/stomp/c_parser"
+when "jruby"
+  require "stompede/stomp/java_parser"
 end
 
 module Stompede

@@ -29,3 +29,5 @@ spec/spec.log
 lib/stompede/stomp/ruby_parser.rb
 lib/stompede/stomp/c_parser.rb
 ext/stompede/c_parser.c
+ext/java/stompede/stomp/JavaParser.java
+lib/stompede/stomp/java_parser.jar
