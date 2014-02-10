@@ -76,12 +76,12 @@ module Stompede
         end
       end
     rescue Disconnected
+      @app.terminate
     rescue ClientError => e
       very_safe_io do
         headers = { "content-type" => "text/plain" }
         @socket.write(Stomp::Message.new("ERROR", headers, "#{e.class}: #{e.message}\n\n#{e.backtrace.join("\n")}").to_str)
       end
-    ensure
       @app.terminate
     end
 
