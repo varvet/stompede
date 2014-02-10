@@ -20,6 +20,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.extensions    = %w[ext/stompede/extconf.rb]
 
+  spec.add_dependency "reel"
   spec.add_dependency "celluloid"
   spec.add_dependency "celluloid-io"
   spec.add_development_dependency "bundler"

@@ -1,6 +1,7 @@
 require "celluloid"
 require "celluloid/io"
 
+require "delegate"
 require "securerandom"
 
 require "stompede/version"
@@ -15,4 +16,47 @@ require "stompede/subscription"
 module Stompede
   BUFFER_SIZE = 10 * 1024
   STOMP_VERSION = "1.2" # version of the STOMP protocol we support
+
+  class TCPServer
+    def initialize(app_klass)
+      @app_klass = app_klass
+    end
+
+    def listen(*args)
+      server = ::TCPServer.new(*args)
+      loop do
+        socket = server.accept
+        App.new(Celluloid::IO::TCPSocket.new(socket))
+      end
+    end
+  end
+
+  class WebsocketServer
+    def initialize(app_klass)
+      @app_klass = app_klass
+    end
+
+    class Socket < SimpleDelegator
+      def initialize(websocket)
+        super(websocket)
+      end
+
+      def readpartial(*args)
+        read
+      end
+    end
+
+    def listen(*args)
+      require "reel"
+      Reel::Server.run(*args) do |connection|
+        connection.each_request do |request|
+          if request.websocket?
+            App.new(Socket.new(request.websocket))
+          else
+            request.respond :ok, "Stompede"
+          end
+        end
+      end
+    end
+  end
 end
