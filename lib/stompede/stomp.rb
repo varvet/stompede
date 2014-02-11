@@ -13,6 +13,8 @@ module Stompede
   module Stomp
     Parser = if defined?(CParser)
       CParser
+    elsif defined?(JavaParser)
+      JavaParser
     else
       RubyParser
     end
