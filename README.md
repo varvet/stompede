@@ -5,58 +5,118 @@
 [![Code Climate](https://codeclimate.com/github/Burgestrand/stompede.png)](https://codeclimate.com/github/Burgestrand/stompede)
 [![Gem Version](https://badge.fury.io/rb/stompede.png)](http://badge.fury.io/rb/stompede)
 
-STOMP over WebSockets for Ruby. Stompede aims to supply:
+Stompede is a [STOMP](http://stomp.github.io/) server written in Ruby, built on
+[Celluloid](http://celluloid.io/).
 
-- A STOMP message parser.
-- A STOMP message generator.
-- A STOMP protocol WebSocket server.
+With STOMP, clients can subscribe to multiple destinations and send and receive
+messages. STOMP is a transport agnostic protocol, and Stompede comes with a TCP
+server as well as a WebSocket server. The WebSocket server enables browsers to
+subscribe to multiple destinations over a single WebSocket connection, greatly
+reducing the number of open socket connections.
 
 ## Usage
 
-TODO: Write usage instructions here.
+Stompede apps are written by inheriting from `Stompede::Base`:
 
-### Guarantees
+``` ruby
+class MyApp < Stompede::Base
+  def on_open
+  end
 
-- `open` for a client will always receive a matching `close` (TODO: exceptions?)
-- `subscribe` with a subscriber will always receive a matching `unsubscribe` (TODO: exceptions?)
-- `connect` and `disconnect` may not be called for a client, for example if it
-  disconnects instantly.
-- All messages for a single client are processed in FIFO order serially.
-- `close` may not be called immediately when a client disconnects, but some
-  time later.
-- Once `close` has been called, no further messages from the client will be
-  processed.
+  def on_connect(frame)
+  end
 
-- Objects representing
+  def on_subscribe(subscription, frame)
+  end
 
-### Constraints
+  def on_send(frame)
+  end
 
-- Clients may not subscribe to the same destination twice.
-- Transactions are not (yet) supported.
+  def on_unsubscribe(subscription, frame)
+  end
 
-### Sane defaults
+  def on_disconnect(frame)
+  end
 
-- SEND frame with a receipt from the client will receive a RECEIPT when the callback succeeds, and an ERROR in case it caused an exception. (assuming the client is still connected)
+  def on_close
+  end
+end
+```
+
+It can then be served up via:
+
+``` ruby
+Stompede::TCPServer.new(MyApp).listen("127.0.0.1", 8675)
+```
+
+In this case `MyApp` is a `Celluloid::Actor`, and Stompede will create one
+instance of this actor for each active socket connection.
+
+The above example illustrates all available callbacks.
+
+`on_open` and `on_close` are always called when the socket is opened and
+when it is closed. These callbacks are dependable, and you can rely on
+Stompede always calling them, no matter what.
+
+`on_connect` and `on_disconnect` are called when the client sends the `CONNECT`
+and `DISCONNECT` frames respectively. Misbehaving clients may not do so. Also
+network errors or sudden closing of the socket may cause even well behaved
+clients not to call these handlers. Especially, do not rely on the
+`on_disconnect` handler to clean up any resources allocated for the client, use
+`on_close` instead. They are still useful in that clients may provide headers
+with the frames, for example for authentication.
+
+`on_subscribe` receives a subscription object, on which `message` may be called,
+in order to send message to the client. For example:
+
+``` ruby
+class MyApp < Stompede::Base
+  def on_subscribe(subscription, frame)
+    @pinger = every(1) do
+      subscription.message("PONG", pong: "yes")
+    end
+  end
+
+  def on_unsubscribe(subscription, frame)
+    @pinger.cancel
+  end
+end
+```
+
+This example also shows how you can use Celluloid timers. Stompede supports the
+`heart-beat` header in the STOMP protocol, so this kind of pinging is probably
+not necessary.
+
+Stompede guarantees that `on_unsubscribe` will always be called even in the
+event of the socket suddently closing for any reason.
+
+The STOMP protocol requires that a client must have subscribed before the
+server can send messages to the client, and that messages must be tied to a
+subscription, this is why it is not possible to send messages to a client
+without a valid subscription.
+
+## Heartbeats
+
+## Disconnecting invalid or malicious clients
+
+## Receipts
+
+## The ack-mode header, ACK and NACK
+
+## Transactions
+
+Transactions are unfortunately not yet supported, pull requests welcome!
 
 ## Development
 
 Development should be ez.
 
 ``` bash
-git clone git@github.com:Burgestrand/stompede.git # git, http://git-scm.com/
+git clone git@github.com:stompede/stompede.git # git, http://git-scm.com/
 cd stompede
-brew bundle # Homebrew, http://brew.sh/
 bundle install # Bundler, http://bundler.io/
-rake # compile state machine, run test suite
+rake
 ```
-
-A few notes:
-
-- I develop on a Mac. YMMV.
-- Native dependencies are listed in the Brewfile.
-- The stomp message parser is written in [Ragel](http://www.complang.org/ragel/).
-- Graphviz is used to visualize the Ragel state machine.
-- Most rake tasks will compile the state machine anew if needed.
 
 ## Contributing
 
@@ -67,3 +127,7 @@ A few notes:
 5. Commit your changes (`git commit -am 'Add some feature'`).
 6. Push to the branch (`git push origin my-new-feature`).
 7. Create new pull request on GitHub.
+
+## License
+
+[MIT](MIT-LICENSE.txt)
