@@ -14,7 +14,7 @@ server as well as a WebSocket server. The WebSocket server enables browsers to
 subscribe to multiple destinations over a single WebSocket connection, greatly
 reducing the number of open socket connections.
 
-## Usage
+### Usage
 
 Stompede apps are written by inheriting from `Stompede::Base`:
 
@@ -95,23 +95,23 @@ server can send messages to the client, and that messages must be tied to a
 subscription, this is why it is not possible to send messages to a client
 without a valid subscription.
 
-## Heartbeats
+### Heartbeats
 
-## Disconnecting invalid or malicious clients
+### Disconnecting invalid or malicious clients
 
-## Receipts
+### Receipts
 
-## The ack-mode header, ACK and NACK
+### The ack-mode header, ACK and NACK
 
-## The subscription registry
+### The subscription registry
 
-## Handling global state
+### Handling global state
 
-## Transactions
+### Transactions
 
 Transactions are unfortunately not yet supported, pull requests welcome!
 
-## Development
+### Development
 
 Development should be ez.
 
@@ -122,7 +122,7 @@ bundle install # Bundler, http://bundler.io/
 rake
 ```
 
-## Contributing
+### Contributing
 
 1. Fork it on GitHub (<http://github.com/Burgestrand/stompede/fork>).
 2. Create your feature branch (`git checkout -b my-new-feature`).
@@ -132,6 +132,6 @@ rake
 6. Push to the branch (`git push origin my-new-feature`).
 7. Create new pull request on GitHub.
 
-## License
+### License
 
 [MIT](MIT-LICENSE.txt)
