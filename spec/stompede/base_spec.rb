@@ -109,6 +109,13 @@ describe Stompede::Base do
       app.should be_alive
       server_io.should_not be_closed
     end
+
+    it "includes the receipt in the error when app throws an error", error: callback do
+      send_message(client_io, command, headers.merge("receipt" => "1234"))
+      latch.receive(callback)
+
+      client_io.should receive_error(TestApp::MooError, "MOOOO!", "receipt-id" => "1234")
+    end
   end
 
   describe "#on_disconnect" do

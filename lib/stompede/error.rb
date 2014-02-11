@@ -13,4 +13,13 @@ module Stompede
 
   class Disconnected < Error
   end
+
+  class HandlerError < Error
+    attr_reader :error
+
+    def initialize(error)
+      @error = error
+      super(error.to_s)
+    end
+  end
 end

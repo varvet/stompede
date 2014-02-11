@@ -57,21 +57,20 @@ module Stompede
             }
             safe_io { @socket.write(StompParser::Frame.new("CONNECTED", headers, "").to_str) }
           when "DISCONNECT"
-            @app.on_disconnect(frame)
+            receipt(frame) { @app.on_disconnect(frame) }
           when "SEND"
-            @app.on_send(frame)
+            receipt(frame) { @app.on_send(frame) }
           when "SUBSCRIBE"
             subscription = subscribe(frame)
-            @app.on_subscribe(subscription, frame)
+            receipt(frame) { @app.on_subscribe(subscription, frame) }
           when "UNSUBSCRIBE"
             subscription = unsubscribe(frame)
-            @app.on_unsubscribe(subscription, frame)
-          end
-          if not ["CONNECT", "STOMP"].include?(frame.command) and frame["receipt"]
-            safe_io { @socket.write(StompParser::Frame.new("RECEIPT", { "receipt-id" => frame["receipt"] }, "").to_str) }
+            receipt(frame) { @app.on_unsubscribe(subscription, frame) }
           end
         end
       end
+    rescue HandlerError => e
+      raise e.error
     rescue Disconnected
       @app.terminate
     rescue ClientError, StompParser::Error => e
@@ -82,10 +81,25 @@ module Stompede
       raise
     end
 
-    def write_error(error)
+    def receipt(frame)
+      yield
+      if frame["receipt"]
+        safe_io { @socket.write(StompParser::Frame.new("RECEIPT", { "receipt-id" => frame["receipt"] }, "").to_str) }
+      end
+    rescue => e
+      if frame["receipt"]
+        write_error(e, "receipt-id" => frame["receipt"])
+      else
+        write_error(e)
+      end
+      raise HandlerError.new(e)
+    end
+
+    def write_error(error, headers={})
       body = "#{error.class}: #{error.message}\n\n#{error.backtrace.join("\n")}"
-      headers = { "content-type" => "text/plain" }
+      headers["content-type"] = "text/plain"
       headers.merge!(error.headers) if error.respond_to?(:headers)
+
       @socket.write(StompParser::Frame.new("ERROR", headers, body).to_str)
     rescue IOError
       # ignore, as per STOMP spec, the connection might already be gone.
