@@ -46,6 +46,26 @@ module Stompede
         end
       end
 
+      def content_type
+        headers["content-type"]
+      end
+
+      # @raise [ArgumentError] if encoding does not exist
+      # @return [Encoding] body encoding, according to headers.
+      def content_encoding
+        mime_type, charset = content_type.to_s.scan(/\A([^;]*)(?:;charset=(.*))?\z/).first
+        mime_type = mime_type.to_s
+        charset = charset.to_s
+
+        if charset.empty? and mime_type.to_s.start_with?("text/")
+          Encoding::UTF_8
+        elsif charset.empty?
+          Encoding::BINARY
+        else
+          Encoding.find(charset)
+        end
+      end
+
       # Change the command of this message.
       #
       # @param [String] command
@@ -67,7 +87,7 @@ module Stompede
       #
       # @param [String] body
       def write_body(body)
-        @body = body
+        @body = body.force_encoding(content_encoding)
       end
 
       # @return [String] a string-representation of this message.
@@ -98,7 +118,7 @@ module Stompede
 
       # @see http://stomp.github.io/stomp-specification-1.2.html#Value_Encoding
       def translate_header(value)
-        value.gsub(HEADER_TRANSLATIONS_KEYS, HEADER_TRANSLATIONS) unless value.empty?
+        value.gsub(HEADER_TRANSLATIONS_KEYS, HEADER_TRANSLATIONS).force_encoding(Encoding::UTF_8) unless value.empty?
       end
 
       # inverse of #translate_header

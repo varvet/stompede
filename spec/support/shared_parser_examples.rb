@@ -5,7 +5,7 @@ RSpec.shared_examples_for "a stompede parser" do
   context "#parse" do
     def parse_all(data)
       messages = []
-      parser.parse(data) { |m| messages << m }
+      parser.parse(data.force_encoding("BINARY")) { |m| messages << m }
       messages
     end
 
@@ -59,6 +59,20 @@ RSpec.shared_examples_for "a stompede parser" do
         messages.length.should eq(1)
         messages[0].headers.should eq("key" => "first")
       end
+
+      it "parses multibyte headers as UTF-8" do
+        messages = parse_all("MESSAGE\nwhat:üp\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].headers["what"].should eq "\xC3\xBCp".force_encoding("UTF-8")
+        messages[0].headers["what"].encoding.should eq Encoding::UTF_8
+      end
+
+      it "parses multibyte headers as UTF-8 even if content type specifies something else" do
+        messages = parse_all("MESSAGE\ncontent-type:text/plain;charset=ISO-8859-1\nwhat:üp\n\n\x00")
+        messages.length.should eq(1)
+        messages[0].headers["what"].should eq "\xC3\xBCp".force_encoding("UTF-8")
+        messages[0].headers["what"].encoding.should eq Encoding::UTF_8
+      end
     end
 
     context "body" do
@@ -74,10 +88,39 @@ RSpec.shared_examples_for "a stompede parser" do
         messages[0].body.should eq "bo\x00dy"
       end
 
-      it "can parse multibyte body" do
-        messages = parse_all("MESSAGE\n\nWhat üp\x00") # UTF-8
+      it "parses body as binary string when no content-type given" do
+        messages = parse_all("MESSAGE\n\nWhat üp\x00")
         messages.length.should eq(1)
-        messages[0].body.should eq "What üp"
+        messages[0].body.should eq "What \xC3\xBCp".force_encoding("BINARY")
+        messages[0].body.encoding.should eq Encoding::BINARY
+      end
+
+      it "parses body as encoded string when content-type is a text type and charset is given" do
+        messages = parse_all("MESSAGE\ncontent-type:text/plain;charset=ISO-8859-1\n\nWhat \xFCp\x00")
+        messages.length.should eq(1)
+        messages[0].body.should eq "What \xFCp".force_encoding("iso-8859-1")
+        messages[0].body.encoding.should eq Encoding::ISO_8859_1
+      end
+
+      it "parses body as encoded string when content-type is not a text type and charset is given" do
+        messages = parse_all("MESSAGE\ncontent-type:application/octet-stream;charset=ISO-8859-1\n\nWhat \xFCp\x00")
+        messages.length.should eq(1)
+        messages[0].body.should eq "What \xFCp".force_encoding("iso-8859-1")
+        messages[0].body.encoding.should eq Encoding::ISO_8859_1
+      end
+
+      it "parses body as utf-8 encoded string when content-type is a text type and charset is not given" do
+        messages = parse_all("MESSAGE\ncontent-type:text/plain\n\nWhat üp\x00")
+        messages.length.should eq(1)
+        messages[0].body.should eq "What \xC3\xBCp".force_encoding("UTF-8")
+        messages[0].body.encoding.should eq Encoding::UTF_8
+      end
+
+      it "parses body as binary string when content-type is not a text type and charset is not given" do
+        messages = parse_all("MESSAGE\ncontent-type:application/octet-stream\n\nWhat \xFCp\x00")
+        messages.length.should eq(1)
+        messages[0].body.should eq "What \xFCp".force_encoding("BINARY")
+        messages[0].body.encoding.should eq Encoding::BINARY
       end
     end
 
