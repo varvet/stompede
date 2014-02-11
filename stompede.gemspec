@@ -6,10 +6,10 @@ require 'stompede/version'
 Gem::Specification.new do |spec|
   spec.name          = "stompede"
   spec.version       = Stompede::VERSION
-  spec.authors       = ["Kim Burgestrand"]
-  spec.email         = ["kim@burgestrand.se"]
-  spec.summary       = %q{STOMP over WebSockets for Ruby.}
-  spec.homepage      = "https://github.com/Burgestrand/stompede"
+  spec.authors       = ["Kim Burgestrand", "Jonas Nicklas"]
+  spec.email         = ["kim@burgestrand.se", "jonas.nicklas@gmail.com"]
+  spec.summary       = %q{STOMP over WebSockets.}
+  spec.homepage      = "https://github.com/stompede/stompede"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files`.split($/)

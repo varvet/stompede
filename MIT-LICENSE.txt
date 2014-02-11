@@ -1,4 +1,4 @@
-Copyright (c) 2013 Kim Burgestrand
+Copyright (c) 2013 Kim Burgestrand, Jonas Nicklas
 
 MIT License
 
