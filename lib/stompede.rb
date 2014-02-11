@@ -9,6 +9,7 @@ require "stompede/version"
 require "stompede/error"
 
 require "stompede/base"
+require "stompede/frame"
 require "stompede/session"
 require "stompede/subscription"
 

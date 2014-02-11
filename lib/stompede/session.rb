@@ -42,13 +42,14 @@ module Stompede
 
       loop do
         chunk = safe_io { @socket.readpartial(Stompede::BUFFER_SIZE) }
-        parser.parse(chunk) do |message|
-          case message.command
+        parser.parse(chunk) do |frame|
+          frame = Frame.new(frame.command, frame.headers, frame.body)
+          case frame.command
           when "CONNECT", "STOMP"
-            unless message["accept-version"].split(",").include?(STOMP_VERSION)
+            unless frame["accept-version"].split(",").include?(STOMP_VERSION)
               raise ClientError.new("client must support STOMP version #{STOMP_VERSION}", version: STOMP_VERSION)
             end
-            @app.on_connect(message)
+            @app.on_connect(frame)
             headers = {
               "version" => STOMP_VERSION,
               "server" => "Stompede/#{Stompede::VERSION}",
@@ -56,15 +57,15 @@ module Stompede
             }
             safe_io { @socket.write(StompParser::Frame.new("CONNECTED", headers, "").to_str) }
           when "DISCONNECT"
-            @app.on_disconnect(message)
+            @app.on_disconnect(frame)
           when "SEND"
-            @app.on_send(message)
+            @app.on_send(frame)
           when "SUBSCRIBE"
-            subscription = subscribe(message)
-            @app.on_subscribe(subscription, message)
+            subscription = subscribe(frame)
+            @app.on_subscribe(subscription, frame)
           when "UNSUBSCRIBE"
-            subscription = unsubscribe(message)
-            @app.on_unsubscribe(subscription, message)
+            subscription = unsubscribe(frame)
+            @app.on_unsubscribe(subscription, frame)
           end
         end
       end
