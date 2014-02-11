@@ -6,39 +6,38 @@ def parse_one(parser, data)
   message
 end
 
-describe "Parser.parse minimal" do |bench|
-  bench.setup do
-    @parser = Stompede::Stomp::Parser.new
-    @message = "CONNECT\n\n\x00"
+%w[CParser JavaParser RubyParser].each do |parser|
+  parser = begin
+    Stompede::Stomp.const_get(parser)
+  rescue NameError
+    next
   end
 
-  bench.code { parse_one(@parser, @message) }
-end
+  describe "#{parser}: minimal" do |bench|
+    bench.setup do
+      @parser = parser.new
+      @message = "CONNECT\n\n\x00"
+    end
 
-describe "Parser.parse minimal with header" do |bench|
-  bench.setup do
-    @parser = Stompede::Stomp::Parser.new
-    @message = "CONNECT\ncontent-length:0\n\n\x00"
+    bench.code { parse_one(@parser, @message) }
   end
 
-  bench.code { parse_one(@parser, @message) }
-end
+  describe "#{parser}: headers and small body" do |bench|
+    bench.setup do
+      @parser = parser.new
+      @message = "CONNECT\ncontent-length:4\n\nbody\x00"
+    end
 
-describe "Parser.parse with headers and small body" do |bench|
-  bench.setup do
-    @parser = Stompede::Stomp::Parser.new
-    @message = "CONNECT\ncontent-length:4\n\nbody\x00"
+    bench.code { parse_one(@parser, @message) }
   end
 
-  bench.code { parse_one(@parser, @message) }
-end
+  describe "#{parser}: headers and large body" do |bench|
+    bench.setup do
+      @parser = parser.new
+      large_body = ("b" * (Stompede::Stomp.max_message_size - 50)) # make room for headers
+      @message = "CONNECT\ncontent-length:#{large_body.bytesize}\n\n#{large_body}\x00"
+    end
 
-describe "Parser.parse with headers and large body" do |bench|
-  bench.setup do
-    @parser = Stompede::Stomp::Parser.new
-    large_body = ("b" * (Stompede::Stomp.max_message_size - 50)) # make room for headers
-    @message = "CONNECT\ncontent-length:#{large_body.bytesize}\n\n#{large_body}\x00"
+    bench.code { parse_one(@parser, @message) }
   end
-
-  bench.code { parse_one(@parser, @message) }
 end
