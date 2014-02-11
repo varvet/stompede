@@ -88,5 +88,16 @@ module Helpers
       @error
     end
   end
+
+  matcher :be_an_empty_socket do |klass, body, headers = {}|
+    match do |io|
+      begin
+        client_io.read_nonblock(100)
+        false
+      rescue IO::EAGAINWaitReadable
+        true
+      end
+    end
+  end
 end
 

@@ -66,6 +66,15 @@ describe Stompede::Base do
       message["foo"].should eq("Bar")
     end
 
+    it "does not send a receipt, because the STOMP spec says so" do
+      send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "receipt" => "1234")
+      latch.receive(:on_connect)
+      message = parse_message(client_io)
+      message.command.should eq("CONNECTED")
+      message["receipt-id"].should be_nil
+      client_io.should be_an_empty_socket
+    end
+
     it "replies with a CONNECTED frame when the handler succeeds" do
       send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
       message = parse_message(client_io)
