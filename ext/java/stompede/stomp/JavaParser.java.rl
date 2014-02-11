@@ -100,13 +100,14 @@ public class JavaParser extends RubyObject {
     public int mark_content_length = -1;
   }
 
-  private RaiseException exception;
+  private RubyException parseError;
   private long maxMessageSize;
   private State state;
 
   public JavaParser(Ruby runtime, RubyClass klass) {
     super(runtime, klass);
     state = new State();
+    parseError = null;
   }
 
   @JRubyMethod
@@ -123,31 +124,53 @@ public class JavaParser extends RubyObject {
 
   @JRubyMethod(argTypes = {RubyString.class})
   public IRubyObject parse(ThreadContext context, IRubyObject chunk, Block block) {
-    byte data[] = ((RubyString) chunk).getBytes();
+    if (parseError == null) {
+      int p;
+      byte data[] = null;
+      byte bytes[] = ((RubyString) chunk).getBytes();
 
-    int p = 0;
-    int pe = data.length;
+      if (state.chunk != null) {
+        p = state.chunk.length;
+        data = new byte[state.chunk.length + bytes.length];
+        System.arraycopy(state.chunk, 0, data, 0, state.chunk.length);
+        System.arraycopy(bytes, 0, data, state.chunk.length, bytes.length);
+      } else {
+        p = 0;
+        data = bytes;
+      }
 
-    int cs = state.cs;
-    int mark = state.mark;
-    RubyString mark_key = state.mark_key;
-    IRubyObject mark_message = state.mark_message;
-    int mark_message_size = state.mark_message_size;
-    int mark_content_length = state.mark_content_length;
+      int pe = data.length;
 
-    %% write exec;
+      int cs = state.cs;
+      int mark = state.mark;
+      RubyString mark_key = state.mark_key;
+      IRubyObject mark_message = state.mark_message;
+      int mark_message_size = state.mark_message_size;
+      int mark_content_length = state.mark_content_length;
 
-    state.cs = cs;
-    state.mark = mark;
-    state.mark_key = mark_key;
-    state.mark_message = mark_message;
-    state.mark_message_size = mark_message_size;
-    state.mark_content_length = mark_content_length;
+      %% write exec;
 
-    if (cs == error) {
-      IRubyObject args[] = { RubyString.newString(context.runtime, data), RubyFixnum.newFixnum(context.runtime, (long) p) };
-      RubyException error = (RubyException) context.runtime.getClassFromPath("Stompede::Stomp").callMethod(context, "build_parse_error", args);
-      throw new RaiseException(error);
+      if (mark != -1) {
+        state.chunk = data;
+      } else {
+        state.chunk = null;
+      }
+
+      state.cs = cs;
+      state.mark = mark;
+      state.mark_key = mark_key;
+      state.mark_message = mark_message;
+      state.mark_message_size = mark_message_size;
+      state.mark_content_length = mark_content_length;
+
+      if (cs == error) {
+        IRubyObject args[] = { RubyString.newString(context.runtime, data), RubyFixnum.newFixnum(context.runtime, (long) p) };
+        parseError = (RubyException) context.runtime.getClassFromPath("Stompede::Stomp").callMethod(context, "build_parse_error", args);
+      }
+    }
+
+    if (parseError != null) {
+      throw new RaiseException(parseError);
     }
 
     return context.nil;
