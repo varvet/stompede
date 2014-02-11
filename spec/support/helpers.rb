@@ -75,7 +75,7 @@ module Helpers
         message["content-type"].should eq("text/plain")
         message.body.should =~ Regexp.new(Regexp.quote("#{klass}: #{body}"))
         headers.each do |key, value|
-          message[key.to_s].should == value.to_s
+          message[key.to_s].should == value
         end
         io.should be_eof
       rescue => e

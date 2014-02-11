@@ -20,5 +20,13 @@ module Stompede
     def destination
       headers["destination"]
     end
+
+    def detach!
+      @detached = true
+    end
+
+    def detached?
+      @detached
+    end
   end
 end

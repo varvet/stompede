@@ -13,7 +13,7 @@ describe Stompede::Base do
 
   let(:app_monitor) { CrashMonitor.new }
   let!(:app) do
-    TestApp.new(server_io, latch, error: example.metadata[:error]) do |app|
+    TestApp.new(server_io, latch, error: example.metadata[:error], detach: example.metadata[:detach]) do |app|
       app_monitor.observe(app)
     end
   end
@@ -115,6 +115,22 @@ describe Stompede::Base do
       latch.receive(callback)
 
       client_io.should receive_error(TestApp::MooError, "MOOOO!", "receipt-id" => "1234")
+    end
+
+    context "with detached frame", detach: callback do
+      it "does not send a receipt when the client sends a #{command} frame with a receipt header" do
+        send_message(client_io, command, headers.merge("receipt" => "1234"))
+        latch.receive(callback)
+
+        client_io.should be_an_empty_socket
+        app.should be_alive
+      end
+
+      it "does not include the receipt in the error when app throws an error", error: callback do
+        send_message(client_io, command, headers.merge("receipt" => "1234"))
+        latch.receive(callback)
+        client_io.should receive_error(TestApp::MooError, "MOOOO!", "receipt-id" => nil)
+      end
     end
   end
 
