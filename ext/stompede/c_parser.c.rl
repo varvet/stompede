@@ -136,7 +136,6 @@ static VALUE parser_initialize(int argc, VALUE *argv, VALUE self) {
   state->error = Qnil;
   state->max_message_size = FIX2LONG(max_message_size);
   state->chunk = Qnil;
-  state->p = NULL;
   state->cs = start;
   state->mark = NULL;
   state->mark_key = Qnil;
