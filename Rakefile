@@ -66,10 +66,9 @@ task :console => :compile do
   exec "pry", "-rbundler/setup", "-rstompede"
 end
 
-desc "Run the test suite."
-task :spec => :compile do
-  sh "rspec"
-end
+require "rspec/core/rake_task"
+RSpec::Core::RakeTask.new(:spec)
+task :spec => :compile
 
 desc "Run all benchmarks."
 task :bench => :compile do
