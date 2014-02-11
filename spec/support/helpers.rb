@@ -94,7 +94,7 @@ module Helpers
       begin
         client_io.read_nonblock(100)
         false
-      rescue IO::EAGAINWaitReadable
+      rescue IO::WaitReadable
         true
       end
     end
