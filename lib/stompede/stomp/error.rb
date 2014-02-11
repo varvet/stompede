@@ -7,15 +7,6 @@ module Stompede
     class ParseError < Error
     end
 
-    # Raised when the Stomp::Parser tries to buffer
-    # more than what has been allowed.
-    #
-    # Protects against malicious clients trying to
-    # fill the available server memory by sending an
-    # unbounded amount of data.
-    class BufferLimitExceeded < ParseError
-    end
-
     # Raised when the Stomp::Parser has reached the
     # limit for how large a Stomp::Message may be.
     #
