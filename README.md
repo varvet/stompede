@@ -103,6 +103,10 @@ without a valid subscription.
 
 ## The ack-mode header, ACK and NACK
 
+## The subscription registry
+
+## Handling global state
+
 ## Transactions
 
 Transactions are unfortunately not yet supported, pull requests welcome!
