@@ -53,16 +53,20 @@ module Stompede
       # @raise [ArgumentError] if encoding does not exist
       # @return [Encoding] body encoding, according to headers.
       def content_encoding
-        mime_type, charset = content_type.to_s.scan(/\A([^;]*)(?:;charset=(.*))?\z/).first
-        mime_type = mime_type.to_s
-        charset = charset.to_s
+        if content_type
+          mime_type, charset = content_type.to_s.split(";")
+          mime_type = mime_type.to_s
+          charset = charset.to_s[/\Acharset=(.*)/, 1].to_s
 
-        if charset.empty? and mime_type.to_s.start_with?("text/")
-          Encoding::UTF_8
-        elsif charset.empty?
-          Encoding::BINARY
+          if charset.empty? and mime_type.to_s.start_with?("text/")
+            Encoding::UTF_8
+          elsif charset.empty?
+            Encoding::BINARY
+          else
+            Encoding.find(charset)
+          end
         else
-          Encoding.find(charset)
+          Encoding::BINARY
         end
       end
 
