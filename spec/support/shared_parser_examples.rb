@@ -5,8 +5,14 @@ RSpec.shared_examples_for "a stompede parser" do
   context "#parse" do
     def parse_all(data)
       messages = []
-      parser.parse(data.force_encoding("BINARY")) { |m| messages << m }
+      parser.parse(data) { |m| messages << m }
       messages
+    end
+
+    it "parses message as binary" do
+      messages = parse_all("CONNECT\n\n\x00")
+      messages.length.should eq(1)
+      messages[0].command.encoding.should eq Encoding::BINARY
     end
 
     context "command" do
@@ -60,18 +66,17 @@ RSpec.shared_examples_for "a stompede parser" do
         messages[0].headers.should eq("key" => "first")
       end
 
-      it "parses multibyte headers as UTF-8" do
-        messages = parse_all("MESSAGE\nwhat:üp\n\n\x00")
-        messages.length.should eq(1)
-        messages[0].headers["what"].should eq "\xC3\xBCp".force_encoding("UTF-8")
-        messages[0].headers["what"].encoding.should eq Encoding::UTF_8
-      end
-
       it "parses multibyte headers as UTF-8 even if content type specifies something else" do
-        messages = parse_all("MESSAGE\ncontent-type:text/plain;charset=ISO-8859-1\nwhat:üp\n\n\x00")
+        messages = parse_all("MESSAGE\ncontent-type:text/plain;charset=ISO-8859-1\nwhät:üp\n\n\x00")
         messages.length.should eq(1)
-        messages[0].headers["what"].should eq "\xC3\xBCp".force_encoding("UTF-8")
-        messages[0].headers["what"].encoding.should eq Encoding::UTF_8
+
+        key, value = messages[0].headers.to_a[1]
+
+        key.should eq "wh\xC3\xA4t".force_encoding("UTF-8")
+        key.encoding.should eq Encoding::UTF_8
+
+        value.should eq "\xC3\xBCp".force_encoding("UTF-8")
+        value.encoding.should eq Encoding::UTF_8
       end
     end
 

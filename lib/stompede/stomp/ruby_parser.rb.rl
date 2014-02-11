@@ -95,6 +95,8 @@ module Stompede
       # @yield [message] yields each message as it is parsed
       # @yieldparam message [Stomp::Message]
       def self._parse(chunk, state, max_message_size)
+        chunk.force_encoding(Encoding::BINARY)
+
         if state.chunk
           p = state.chunk.bytesize
           chunk = state.chunk << chunk
