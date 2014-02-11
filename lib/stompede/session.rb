@@ -45,6 +45,9 @@ module Stompede
         parser.parse(chunk) do |message|
           case message.command
           when "CONNECT"
+            unless message["accept-version"].split(",").include?(STOMP_VERSION)
+              raise ClientError.new("client must support STOMP version #{STOMP_VERSION}", version: STOMP_VERSION)
+            end
             @app.on_connect(message)
             headers = {
               "version" => STOMP_VERSION,
@@ -78,6 +81,7 @@ module Stompede
     def write_error(error)
       body = "#{error.class}: #{error.message}\n\n#{error.backtrace.join("\n")}"
       headers = { "content-type" => "text/plain" }
+      headers.merge!(error.headers) if error.respond_to?(:headers)
       @socket.write(Stomp::Message.new("ERROR", headers, body).to_str)
     rescue IOError
       # ignore, as per STOMP spec, the connection might already be gone.

@@ -3,6 +3,12 @@ module Stompede
   end
 
   class ClientError < Error
+    attr_reader :headers
+
+    def initialize(message, headers = {})
+      super(message)
+      @headers = headers
+    end
   end
 
   class Disconnected < Error

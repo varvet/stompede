@@ -67,13 +67,25 @@ module Helpers
     raise "Parsing message timed out!"
   end
 
-  matcher :receive_error do |klass, body|
+  matcher :receive_error do |klass, body, headers = {}|
     match do |io|
-      message = Helpers.parse_message(io)
-      message.command.should eq("ERROR")
-      message["content-type"].should eq("text/plain")
-      message.body.should =~ Regexp.new(Regexp.quote("#{klass}: #{body}"))
-      io.should be_eof
+      begin
+        message = Helpers.parse_message(io)
+        message.command.should eq("ERROR")
+        message["content-type"].should eq("text/plain")
+        message.body.should =~ Regexp.new(Regexp.quote("#{klass}: #{body}"))
+        headers.each do |key, value|
+          message[key.to_s].should == value.to_s
+        end
+        io.should be_eof
+      rescue => e
+        @error = e
+        raise
+      end
+    end
+
+    failure_message_for_should do
+      @error
     end
   end
 end

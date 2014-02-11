@@ -53,14 +53,14 @@ describe Stompede::Base do
 
   describe "#on_connect" do
     it "is called when a client sends a CONNECT frame" do
-      send_message(client_io, "CONNECT", "foo" => "Bar")
+      send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
 
       message = latch.receive(:on_connect).first
       message["foo"].should eq("Bar")
     end
 
     it "replies with a CONNECTED frame when the handler succeeds" do
-      send_message(client_io, "CONNECT", "foo" => "Bar")
+      send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
       message = parse_message(client_io)
       message.command.should eq("CONNECTED")
       message["version"].should eq("1.2")
@@ -69,9 +69,15 @@ describe Stompede::Base do
     end
 
     it "replies with an ERROR frame when the handler fails", error: :on_connect do
-      send_message(client_io, "CONNECT", "foo" => "Bar")
+      send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
       client_io.should receive_error(TestApp::MooError, "MOOOO!")
       expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+    end
+
+    it "sends a client error when client does not support STOMP version #{Stompede::STOMP_VERSION}" do
+      send_message(client_io, "CONNECT", "accept-version" => "1.0,1.1")
+      client_io.should receive_error(Stompede::ClientError, "client must support STOMP version #{Stompede::STOMP_VERSION}", version: Stompede::STOMP_VERSION)
+      app_monitor.wait_for_terminate
     end
   end
 
@@ -88,7 +94,6 @@ describe Stompede::Base do
 
     it "is not called when a socket is closed" do
       client_io.close
-
       latch.invocations_until(:on_close).should_not include(:on_disconnect)
     end
 
