@@ -1,9 +1,7 @@
 # Stompede
 
-[![Build Status](https://travis-ci.org/Burgestrand/stompede.png?branch=master)](https://travis-ci.org/Burgestrand/stompede)
-[![Dependency Status](https://gemnasium.com/Burgestrand/stompede.png)](https://gemnasium.com/Burgestrand/stompede)
-[![Code Climate](https://codeclimate.com/github/Burgestrand/stompede.png)](https://codeclimate.com/github/Burgestrand/stompede)
-[![Gem Version](https://badge.fury.io/rb/stompede.png)](http://badge.fury.io/rb/stompede)
+[![Build Status](https://travis-ci.org/stompede/stompede.png?branch=master)](https://travis-ci.org/stompede/stompede)
+[![Code Climate](https://codeclimate.com/github/stompede/stompede.png)](https://codeclimate.com/github/stompede/stompede)
 
 Stompede is a [STOMP](http://stomp.github.io/) server written in Ruby, built on
 [Celluloid](http://celluloid.io/).
@@ -124,7 +122,7 @@ rake
 
 ### Contributing
 
-1. Fork it on GitHub (<http://github.com/Burgestrand/stompede/fork>).
+1. Fork it on GitHub (<http://github.com/stompede/stompede/fork>).
 2. Create your feature branch (`git checkout -b my-new-feature`).
 3. Follow the [Development](#development) instructions in this README.
 4. Create your changes, please add tests.
