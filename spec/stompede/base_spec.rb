@@ -21,7 +21,7 @@ describe Stompede::Base do
   describe "generic client errors" do
     it "terminates the connection on parser errors" do
       send_message(client_io, "INVALID_COMMAND", "foo" => "Bar")
-      client_io.should receive_error(Stompede::Stomp::ParseError, "unexpected I in chunk (\" -->I<-- NVALID_COMMAND\")")
+      client_io.should receive_error(StompParser::ParseError, "unexpected I in chunk (\" -->I<-- NVALID_COMMAND\")")
       app_monitor.wait_for_terminate
     end
   end

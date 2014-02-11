@@ -36,7 +36,7 @@ module Stompede
     end
 
     def open
-      parser = Stomp::Parser.new
+      parser = StompParser::Parser.new
 
       @app.on_open
 
@@ -54,7 +54,7 @@ module Stompede
               "server" => "Stompede/#{Stompede::VERSION}",
               "session" => SecureRandom.uuid
             }
-            safe_io { @socket.write(Stomp::Message.new("CONNECTED", headers, "").to_str) }
+            safe_io { @socket.write(StompParser::Frame.new("CONNECTED", headers, "").to_str) }
           when "DISCONNECT"
             @app.on_disconnect(message)
           when "SEND"
@@ -70,7 +70,7 @@ module Stompede
       end
     rescue Disconnected
       @app.terminate
-    rescue ClientError, Stomp::Error => e
+    rescue ClientError, StompParser::Error => e
       write_error(e)
       @app.terminate
     rescue => e
@@ -82,7 +82,7 @@ module Stompede
       body = "#{error.class}: #{error.message}\n\n#{error.backtrace.join("\n")}"
       headers = { "content-type" => "text/plain" }
       headers.merge!(error.headers) if error.respond_to?(:headers)
-      @socket.write(Stomp::Message.new("ERROR", headers, body).to_str)
+      @socket.write(StompParser::Frame.new("ERROR", headers, body).to_str)
     rescue IOError
       # ignore, as per STOMP spec, the connection might already be gone.
     end

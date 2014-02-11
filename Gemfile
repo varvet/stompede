@@ -13,3 +13,4 @@ platforms :rbx do
 end
 
 gem "celluloid", github: "celluloid/celluloid"
+gem "stomp_parser", path: "~/Projects/stomp_parser"

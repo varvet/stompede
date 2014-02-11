@@ -52,11 +52,11 @@ module Helpers
       {}
     end
     body = args.shift || ""
-    io.write(Stompede::Stomp::Message.new(command, headers, body).to_str)
+    io.write(StompParser::Frame.new(command, headers, body).to_str)
   end
 
   def parse_message(io)
-    parser = Stompede::Stomp::Parser.new
+    parser = StompParser::Parser.new
 
     Timeout.timeout(0.5) do
       parser.parse(io.readpartial(Stompede::BUFFER_SIZE)) do |message|

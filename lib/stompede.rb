@@ -1,3 +1,4 @@
+require "stomp_parser"
 require "celluloid"
 require "celluloid/io"
 
@@ -6,8 +7,6 @@ require "securerandom"
 
 require "stompede/version"
 require "stompede/error"
-
-require "stompede/stomp"
 
 require "stompede/base"
 require "stompede/session"
