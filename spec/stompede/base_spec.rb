@@ -1,8 +1,15 @@
 # encoding: UTF-8
+
 describe Stompede::Base do
-  let(:sockets) { UNIXSocket.pair }
+  # There is no TCPSocket.pair :(
+  let(:sockets) do
+    server = TCPServer.new("127.0.0.1", 0)
+    client = Thread.new { TCPSocket.new("127.0.0.1", server.addr[1]) }
+    [server.accept, client.value]
+  end
+
   let(:client_io) { sockets[0] }
-  let(:server_io) { Celluloid::IO::UNIXSocket.new(sockets[1]) }
+  let(:server_io) { Celluloid::IO::TCPSocket.new(sockets[1]) }
 
   let(:app_monitor) { CrashMonitor.new }
   let!(:app) do
