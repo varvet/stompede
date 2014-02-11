@@ -34,15 +34,12 @@ describe Stompede::Base do
 
     it "is called even when app throws an error", error: :on_open do
       latch.receive(:on_close)
-      expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
-      client_io.should be_eof
+      client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
 
     it "closes socket even when on_close dies", error: [:on_open, :on_close] do
       latch.receive(:on_close)
-
-      expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
-      client_io.should be_eof
+      client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
   end
 
@@ -89,8 +86,7 @@ describe Stompede::Base do
 
     it "is not called when app throws an error", error: :on_open do
       latch.invocations_until(:on_close).should_not include(:on_disconnect)
-
-      expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+      client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
   end
 
@@ -108,9 +104,7 @@ describe Stompede::Base do
 
     it "closes socket when it throws an error", error: :on_send do
       send_message(client_io, "SEND", "Hello", "destination" => "/foo/bar", "foo" => "Bar")
-
-      expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
-      client_io.should be_eof
+      client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
   end
 
@@ -128,9 +122,7 @@ describe Stompede::Base do
 
     it "closes socket when it throws an error", error: :on_subscribe do
       send_message(client_io, "SUBSCRIBE", "destination" => "/foo/bar", "id" => "1", "foo" => "Bar")
-
-      expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
-      client_io.should be_eof
+      client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
 
     it "replies with an error if subscription does not include a destination" do
@@ -182,8 +174,7 @@ describe Stompede::Base do
       send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
       send_message(client_io, "UNSUBSCRIBE", "id" => "1")
 
-      expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
-      client_io.should be_eof
+      client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
 
     it "replies with an error if subscription does not include an id" do
@@ -235,8 +226,7 @@ describe Stompede::Base do
       unsubscribe_subscription.id.should eq("1")
       unsubscribe_subscription.should eql(subscribe_subscription)
 
-      expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
-      client_io.should be_eof
+      client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
 
     it "is called if subscription raises an error", error: :on_subscribe do
@@ -249,8 +239,7 @@ describe Stompede::Base do
       unsubscribe_subscription.id.should eq("1")
       unsubscribe_subscription.should eql(subscribe_subscription)
 
-      expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
-      client_io.should be_eof
+      client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
   end
 

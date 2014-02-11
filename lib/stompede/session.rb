@@ -28,7 +28,7 @@ module Stompede
   private
 
     def cleanup
-      @socket.close
+      very_safe_io { @socket.close }
       @subscriptions.each do |id, subscription|
         @app.on_unsubscribe(subscription, nil)
       end
@@ -45,23 +45,13 @@ module Stompede
         parser.parse(chunk) do |message|
           case message.command
           when "CONNECT"
-            begin
-              @app.on_connect(message)
-            rescue => e
-              headers = {
-                "version" => STOMP_VERSION,
-                "content-type" => "text/plain"
-              }
-              safe_io { @socket.write(Stomp::Message.new("ERROR", headers, "#{e.class}: #{e.message}\n\n#{e.backtrace.join("\n")}").to_str) }
-              raise
-            else
-              headers = {
-                "version" => STOMP_VERSION,
-                "server" => "Stompede/#{Stompede::VERSION}",
-                "session" => SecureRandom.uuid
-              }
-              safe_io { @socket.write(Stomp::Message.new("CONNECTED", headers, "").to_str) }
-            end
+            @app.on_connect(message)
+            headers = {
+              "version" => STOMP_VERSION,
+              "server" => "Stompede/#{Stompede::VERSION}",
+              "session" => SecureRandom.uuid
+            }
+            safe_io { @socket.write(Stomp::Message.new("CONNECTED", headers, "").to_str) }
           when "DISCONNECT"
             @app.on_disconnect(message)
           when "SEND"
@@ -83,6 +73,12 @@ module Stompede
         @socket.write(Stomp::Message.new("ERROR", headers, "#{e.class}: #{e.message}\n\n#{e.backtrace.join("\n")}").to_str)
       end
       @app.terminate
+    rescue => e
+      very_safe_io do
+        headers = { "content-type" => "text/plain" }
+        @socket.write(Stomp::Message.new("ERROR", headers, "#{e.class}: #{e.message}\n\n#{e.backtrace.join("\n")}").to_str)
+      end
+      raise
     end
 
     def subscribe(frame)
