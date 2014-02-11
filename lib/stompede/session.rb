@@ -67,6 +67,9 @@ module Stompede
             subscription = unsubscribe(frame)
             @app.on_unsubscribe(subscription, frame)
           end
+          if not ["CONNECT", "STOMP"].include?(frame.command) and frame["receipt"]
+            safe_io { @socket.write(StompParser::Frame.new("RECEIPT", { "receipt-id" => frame["receipt"] }, "").to_str) }
+          end
         end
       end
     rescue Disconnected

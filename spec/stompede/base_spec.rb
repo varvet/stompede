@@ -97,6 +97,20 @@ describe Stompede::Base do
     end
   end
 
+  shared_examples_for "receipts" do |command, callback, headers = {}|
+    it "sends a receipt when the client sends a #{command} frame with a receipt header" do
+      send_message(client_io, command, headers.merge("receipt" => "1234"))
+      latch.receive(callback)
+
+      message = parse_message(client_io)
+      message.command.should eq("RECEIPT")
+      message["receipt-id"].should eq("1234")
+
+      app.should be_alive
+      server_io.should_not be_closed
+    end
+  end
+
   describe "#on_disconnect" do
     it "is called when a client sends a DISCONNECT frame" do
       send_message(client_io, "DISCONNECT", "foo" => "Bar")
@@ -107,6 +121,8 @@ describe Stompede::Base do
       app.should be_alive
       server_io.should_not be_closed
     end
+
+    it_behaves_like "receipts", "DISCONNECT", :on_disconnect
 
     it "is not called when a socket is closed" do
       client_io.close
@@ -131,6 +147,8 @@ describe Stompede::Base do
       server_io.should_not be_closed
     end
 
+    it_behaves_like "receipts", "SEND", :on_send
+
     it "closes socket when it throws an error", error: :on_send do
       send_message(client_io, "SEND", "Hello", "destination" => "/foo/bar", "foo" => "Bar")
       client_io.should receive_error(TestApp::MooError, "MOOOO!")
@@ -148,6 +166,8 @@ describe Stompede::Base do
       app.should be_alive
       server_io.should_not be_closed
     end
+
+    it_behaves_like "receipts", "SUBSCRIBE", :on_subscribe, id: "1", destination: "/foo/bar"
 
     it "closes socket when it throws an error", error: :on_subscribe do
       send_message(client_io, "SUBSCRIBE", "destination" => "/foo/bar", "id" => "1", "foo" => "Bar")
@@ -184,8 +204,11 @@ describe Stompede::Base do
   end
 
   describe "#on_unsubscribe" do
-    it "is called when a client sends an unsubscribe frame with the previous Subscription" do
+    before do
       send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
+    end
+
+    it "is called when a client sends an unsubscribe frame with the previous Subscription" do
       send_message(client_io, "UNSUBSCRIBE", "id" => "1", "foo" => "Bar")
 
       subscribe_subscription, _ = latch.receive(:on_subscribe)
@@ -199,15 +222,15 @@ describe Stompede::Base do
       server_io.should_not be_closed
     end
 
+    it_behaves_like "receipts", "UNSUBSCRIBE", :on_unsubscribe, id: "1"
+
     it "closes socket when it throws an error", error: :on_unsubscribe do
-      send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
       send_message(client_io, "UNSUBSCRIBE", "id" => "1")
 
       client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
 
     it "replies with an error if subscription does not include an id" do
-      send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
       send_message(client_io, "UNSUBSCRIBE")
 
       client_io.should receive_error(Stompede::ClientError, "subscription does not include an id")
@@ -215,14 +238,13 @@ describe Stompede::Base do
     end
 
     it "replies with an error if a subscription with the same id does not exist" do
-      send_message(client_io, "UNSUBSCRIBE", "id" => "1")
+      send_message(client_io, "UNSUBSCRIBE", "id" => "2")
 
-      client_io.should receive_error(Stompede::ClientError, "subscription with id \"1\" does not exist")
+      client_io.should receive_error(Stompede::ClientError, "subscription with id \"2\" does not exist")
       app_monitor.wait_for_terminate
     end
 
     it "removes subscription when unsubscribing" do
-      send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
       send_message(client_io, "UNSUBSCRIBE", "id" => "1")
       send_message(client_io, "UNSUBSCRIBE", "id" => "1")
 
@@ -231,8 +253,6 @@ describe Stompede::Base do
     end
 
     it "is called if the session has a subscription and the socket is closed" do
-      send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
-
       subscribe_subscription, _ = latch.receive(:on_subscribe)
       client_io.close
       unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
@@ -245,8 +265,6 @@ describe Stompede::Base do
     end
 
     it "is called if the session has a subscription and the app dies", error: :on_send do
-      send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
-
       subscribe_subscription, _ = latch.receive(:on_subscribe)
       send_message(client_io, "SEND")
       unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
@@ -259,8 +277,6 @@ describe Stompede::Base do
     end
 
     it "is called if subscription raises an error", error: :on_subscribe do
-      send_message(client_io, "SUBSCRIBE", "destination" => "/foo/bar", "id" => "1", "foo" => "Bar")
-
       subscribe_subscription, _ = latch.receive(:on_subscribe)
       unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
 
