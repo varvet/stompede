@@ -33,14 +33,15 @@ import org.jruby.anno.JRubyMethod;
   }
 
   action mark_key {
-    /*mark_key = MARK_STR_NEW();*/
-    /*mark = NULL;*/
+    mark_key = RubyString.newString(context.runtime, data, mark, p - mark);
+    mark = -1;
   }
 
   action write_header {
-    /*rb_funcall(mark_message, g_write_header, 2, mark_key, MARK_STR_NEW());*/
-    /*mark_key = Qnil;*/
-    /*mark = NULL;*/
+    IRubyObject args[] = { mark_key, RubyString.newString(context.runtime, data, mark, p - mark) };
+    mark_message.callMethod(context, "write_header", args);
+    mark_key = null;
+    mark = -1;
   }
 
   action finish_headers {
