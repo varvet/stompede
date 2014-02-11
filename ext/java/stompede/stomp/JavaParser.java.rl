@@ -19,6 +19,7 @@ import org.jruby.anno.JRubyMethod;
 
 %%{
   machine message;
+  alphtype byte;
 
   action mark {
     mark = p;
