@@ -28,7 +28,7 @@ module Stompede
   private
 
     def cleanup
-      very_safe_io { @socket.close }
+      @socket.close rescue nil
       @subscriptions.each do |id, subscription|
         @app.on_unsubscribe(subscription, nil)
       end
@@ -106,11 +106,6 @@ module Stompede
       yield
     rescue IOError
       raise Disconnected, "client disconnected"
-    end
-
-    def very_safe_io
-      yield
-    rescue IOError
     end
   end
 end
