@@ -86,10 +86,23 @@ import org.jruby.anno.JRubyMethod;
 public class JavaParser extends RubyObject {
   %% write data noprefix;
 
+  private class State {
+    public int cs = JavaParser.start;
+    public byte[] chunk;
+    public int mark = -1;
+    public RubyString mark_key;
+    public IRubyObject mark_message;
+    public int mark_message_size = -1;
+    public int mark_content_length = -1;
+  }
+
+  private RaiseException exception;
   private long maxMessageSize;
+  private State state;
 
   public JavaParser(Ruby runtime, RubyClass klass) {
     super(runtime, klass);
+    state = new State();
   }
 
   @JRubyMethod
@@ -107,14 +120,25 @@ public class JavaParser extends RubyObject {
   @JRubyMethod(argTypes = {RubyString.class})
   public IRubyObject parse(ThreadContext context, IRubyObject chunk, Block block) {
     byte data[] = ((RubyString) chunk).getBytes();
+
     int p = 0;
     int pe = data.length;
-    int cs = start;
 
-    IRubyObject mark_message = null;
-    int mark = -1;
+    int cs = state.cs;
+    int mark = state.mark;
+    RubyString mark_key = state.mark_key;
+    IRubyObject mark_message = state.mark_message;
+    int mark_message_size = state.mark_message_size;
+    int mark_content_length = state.mark_content_length;
 
     %% write exec;
+
+    state.cs = cs;
+    state.mark = mark;
+    state.mark_key = mark_key;
+    state.mark_message = mark_message;
+    state.mark_message_size = mark_message_size;
+    state.mark_content_length = mark_content_length;
 
     if (cs == error) {
       // RaiseException error = context.runtime.getClassFromPath("Stompede::Stomp").callMethod("build_parse_error");
