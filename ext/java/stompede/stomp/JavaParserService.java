@@ -9,9 +9,9 @@ import org.jruby.runtime.ObjectAllocator;
 
 public class JavaParserService implements BasicLibraryService {
   public boolean basicLoad(Ruby ruby) {
-    RubyModule mStompede = ruby.getModule("Stompede");
-    RubyModule mStomp = mStompede.defineModuleUnder("Stomp");
-    ruby.defineClassUnder("JavaParser", ruby.getObject(), JAVA_PARSER_ALLOCATOR, mStomp);
+    RubyModule mStomp = ruby.getClassFromPath("Stompede::Stomp");
+    RubyClass cJavaParser = ruby.defineClassUnder("JavaParser", ruby.getObject(), JAVA_PARSER_ALLOCATOR, mStomp);
+    cJavaParser.defineAnnotatedMethods(JavaParser.class);
     return true;
   }
 
