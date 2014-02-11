@@ -44,7 +44,7 @@ module Stompede
         chunk = safe_io { @socket.readpartial(Stompede::BUFFER_SIZE) }
         parser.parse(chunk) do |message|
           case message.command
-          when "CONNECT"
+          when "CONNECT", "STOMP"
             unless message["accept-version"].split(",").include?(STOMP_VERSION)
               raise ClientError.new("client must support STOMP version #{STOMP_VERSION}", version: STOMP_VERSION)
             end

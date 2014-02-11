@@ -59,6 +59,13 @@ describe Stompede::Base do
       message["foo"].should eq("Bar")
     end
 
+    it "is called when a client sends a STOMP frame" do
+      send_message(client_io, "STOMP", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
+
+      message = latch.receive(:on_connect).first
+      message["foo"].should eq("Bar")
+    end
+
     it "replies with a CONNECTED frame when the handler succeeds" do
       send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
       message = parse_message(client_io)
