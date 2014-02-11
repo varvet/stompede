@@ -18,6 +18,14 @@ describe Stompede::Base do
     end
   end
 
+  describe "generic client errors" do
+    it "terminates the connection on parser errors" do
+      send_message(client_io, "INVALID_COMMAND", "foo" => "Bar")
+      client_io.should receive_error(Stompede::Stomp::ParseError, "unexpected I in chunk (\" -->I<-- NVALID_COMMAND\")")
+      app_monitor.wait_for_terminate
+    end
+  end
+
   describe "#on_open" do
     it "is called when a socket is opened" do
       latch.receive(:on_open)

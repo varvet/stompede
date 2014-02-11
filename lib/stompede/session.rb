@@ -67,18 +67,20 @@ module Stompede
       end
     rescue Disconnected
       @app.terminate
-    rescue ClientError => e
-      very_safe_io do
-        headers = { "content-type" => "text/plain" }
-        @socket.write(Stomp::Message.new("ERROR", headers, "#{e.class}: #{e.message}\n\n#{e.backtrace.join("\n")}").to_str)
-      end
+    rescue ClientError, Stomp::Error => e
+      write_error(e)
       @app.terminate
     rescue => e
-      very_safe_io do
-        headers = { "content-type" => "text/plain" }
-        @socket.write(Stomp::Message.new("ERROR", headers, "#{e.class}: #{e.message}\n\n#{e.backtrace.join("\n")}").to_str)
-      end
+      write_error(e)
       raise
+    end
+
+    def write_error(error)
+      body = "#{error.class}: #{error.message}\n\n#{error.backtrace.join("\n")}"
+      headers = { "content-type" => "text/plain" }
+      @socket.write(Stomp::Message.new("ERROR", headers, body).to_str)
+    rescue IOError
+      # ignore, as per STOMP spec, the connection might already be gone.
     end
 
     def subscribe(frame)
