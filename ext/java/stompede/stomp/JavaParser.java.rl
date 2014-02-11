@@ -26,7 +26,7 @@ import org.jruby.anno.JRubyMethod;
 
   action mark_message {
     mark_message = context.runtime.getClassFromPath("Stompede::Stomp::Message").callMethod("new", context.nil, context.nil);
-    /*mark_message_size = 0;*/
+    mark_message_size = 0;
   }
 
   action write_command {
@@ -70,10 +70,12 @@ import org.jruby.anno.JRubyMethod;
   }
 
   action check_message_size {
-    /*mark_message_size += 1;*/
-    /*if (mark_message_size > max_message_size) {*/
-    /*  rb_raise(eMessageSizeExceeded, "");*/
-    /*}*/
+    mark_message_size += 1;
+    if (mark_message_size > maxMessageSize) {
+      RubyModule messageSizeExceeded = context.runtime.getClassFromPath("Stompede::Stomp::MessageSizeExceeded");
+      RubyException error = (RubyException) messageSizeExceeded.callMethod("new");
+      throw new RaiseException(error);
+    }
   }
 
   action finish_message {
@@ -144,8 +146,8 @@ public class JavaParser extends RubyObject {
 
     if (cs == error) {
       IRubyObject args[] = { RubyString.newString(context.runtime, data), RubyFixnum.newFixnum(context.runtime, (long) p) };
-      IRubyObject error = context.runtime.getClassFromPath("Stompede::Stomp").callMethod(context, "build_parse_error", args);
-      throw new RaiseException((RubyException) error);
+      RubyException error = (RubyException) context.runtime.getClassFromPath("Stompede::Stomp").callMethod(context, "build_parse_error", args);
+      throw new RaiseException(error);
     }
 
     return context.nil;
