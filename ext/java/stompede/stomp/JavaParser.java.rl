@@ -7,6 +7,7 @@ import org.jruby.RubyObject;
 import org.jruby.RubyFixnum;
 import org.jruby.RubyString;
 import org.jruby.RubyNumeric;
+import org.jruby.RubyException;
 import org.jruby.exceptions.RaiseException;
 
 import org.jruby.runtime.ThreadContext;
@@ -142,8 +143,9 @@ public class JavaParser extends RubyObject {
     state.mark_content_length = mark_content_length;
 
     if (cs == error) {
-      // RaiseException error = context.runtime.getClassFromPath("Stompede::Stomp").callMethod("build_parse_error");
-      // throw error;
+      IRubyObject args[] = { RubyString.newString(context.runtime, data), RubyFixnum.newFixnum(context.runtime, (long) p) };
+      IRubyObject error = context.runtime.getClassFromPath("Stompede::Stomp").callMethod(context, "build_parse_error", args);
+      throw new RaiseException((RubyException) error);
     }
 
     return context.nil;
