@@ -6,6 +6,7 @@ import org.jruby.RubyClass;
 import org.jruby.RubyObject;
 import org.jruby.RubyFixnum;
 import org.jruby.RubyString;
+import org.jruby.RubyNumeric;
 import org.jruby.exceptions.RaiseException;
 
 import org.jruby.runtime.ThreadContext;
@@ -45,12 +46,13 @@ import org.jruby.anno.JRubyMethod;
   }
 
   action finish_headers {
-    /*VALUE length = rb_funcall(mark_message, g_content_length, 0);*/
-    /*if ( ! NIL_P(length)) {*/
-    /*  mark_content_length = NUM2LONG(length);*/
-    /*} else {*/
-    /*  mark_content_length = -1;*/
-    /*}*/
+    IRubyObject content_length = mark_message.callMethod(context, "content_length");
+
+    if ( ! content_length.isNil()) {
+      mark_content_length = RubyNumeric.num2int(content_length);
+    } else {
+      mark_content_length = -1;
+    }
   }
 
   action write_body {
@@ -59,13 +61,11 @@ import org.jruby.anno.JRubyMethod;
   }
 
   action consume_null {
-    false
-    /*((mark_content_length != -1) && (MARK_LEN < mark_content_length))*/
+    ((mark_content_length != -1) && ((p - mark) < mark_content_length))
   }
 
   action consume_octet {
-    true
-    /*((mark_content_length == -1) || (MARK_LEN < mark_content_length))*/
+    ((mark_content_length == -1) || ((p - mark) < mark_content_length))
   }
 
   action check_message_size {
