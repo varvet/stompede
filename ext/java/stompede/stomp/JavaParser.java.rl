@@ -54,8 +54,8 @@ import org.jruby.anno.JRubyMethod;
   }
 
   action write_body {
-    /*rb_funcall(mark_message, g_write_body, 1, MARK_STR_NEW());*/
-    /*mark = NULL;*/
+    mark_message.callMethod(context, "write_body", RubyString.newString(context.runtime, data, mark, p - mark));
+    mark = -1;
   }
 
   action consume_null {
