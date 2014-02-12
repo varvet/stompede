@@ -99,6 +99,50 @@ without a valid subscription.
 
 ### Receipts
 
+The STOMP protocol allows clients to request receipts when sending messages to
+the server. They do this by specifying the `receipt` header in the frame
+they're sending. The Server then responds with a `RECEIPT` frame when the
+request has finished processing.
+
+Stompede automatically sends receipts when the client asks for them. In the
+case that the callback handler returns without raising any errors, a receipt
+will be sent, if the handler raises an error, an `ERROR` frame is sent instead,
+and the connection is closed.
+
+There may be situations where you want more granular control over when a
+receipt is sent. For example, you might want to perform some processing
+asynchronously:
+
+``` ruby
+class MyApp < Stompede::Base
+  class Worker
+    include Celluloid
+
+    def do_work(frame)
+      # ... do heavy work
+      frame.receipt!
+    rescue => e
+      frame.error!(e)
+      raise
+    end
+  end
+
+  def initialize
+    @worker = Worker.new_link
+  end
+
+  def on_send(frame)
+    frame.detach! # don't send an automatic receipt
+    @worker.async.do_work(frame)
+  end
+end
+```
+
+The call to `frame.detach!` tells Stompede not to automatically send a receipt.
+You then need to manually send a receipt by calling `frame.receipt!` or
+`frame.error!`. These methods are thread-safe, so you can call them from
+another actor.
+
 ### The ack-mode header, ACK and NACK
 
 ### The subscription registry
