@@ -55,7 +55,7 @@ module Stompede
   private
 
     def connect?
-      ["STOMP", "CONNECTED"].include?(command)
+      ["STOMP", "CONNECT"].include?(command)
     end
   end
 end

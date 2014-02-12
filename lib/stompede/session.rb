@@ -49,7 +49,7 @@ module Stompede
             unless frame["accept-version"].split(",").include?(STOMP_VERSION)
               raise ClientError.new("client must support STOMP version #{STOMP_VERSION}", version: STOMP_VERSION)
             end
-            @app.on_connect(frame)
+            dispatch(:on_connect, frame)
             headers = {
               "version" => STOMP_VERSION,
               "server" => "Stompede/#{Stompede::VERSION}",
@@ -57,15 +57,15 @@ module Stompede
             }
             safe_io { @socket.write(StompParser::Frame.new("CONNECTED", headers, "").to_str) }
           when "DISCONNECT"
-            receipt(frame) { @app.on_disconnect(frame) }
+            dispatch(:on_disconnect, frame)
           when "SEND"
-            receipt(frame) { @app.on_send(frame) }
+            dispatch(:on_send, frame)
           when "SUBSCRIBE"
             subscription = subscribe(frame)
-            receipt(frame) { @app.on_subscribe(subscription, frame) }
+            dispatch(:on_subscribe, subscription, frame)
           when "UNSUBSCRIBE"
             subscription = unsubscribe(frame)
-            receipt(frame) { @app.on_unsubscribe(subscription, frame) }
+            dispatch(:on_unsubscribe, subscription, frame)
           end
         end
       end
@@ -81,8 +81,8 @@ module Stompede
       raise
     end
 
-    def receipt(frame)
-      yield
+    def dispatch(callback, *args, frame)
+      @app.send(callback, *args, frame)
       frame.receipt! unless frame.detached?
     rescue => e
       if frame.detached?
