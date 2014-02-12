@@ -390,10 +390,14 @@ describe Stompede::Base do
   end
 
   describe Stompede::Subscription do
+    before do
+      send_message(client_io, "SUBSCRIBE", "id" => "1234", "destination" => "/foo", "ack" => example.metadata[:ack])
+    end
+
+    let(:subscription) { latch.receive(:on_subscribe).first }
+
     describe "#message" do
       it "sends a message to the client" do
-        send_message(client_io, "SUBSCRIBE", "id" => "1234", "destination" => "/foo")
-        subscription = latch.receive(:on_subscribe).first
         subscription.message("What üp?", "foo" => "Bar")
 
         message = parse_message(client_io)
@@ -405,21 +409,27 @@ describe Stompede::Base do
       end
 
       context "with ack mode not set" do
-        it "does nothing if the client is no longer connected"
+        it "does nothing if the client is no longer connected" do
+          client_io.close
+          subscription.message("What üp?", "foo" => "Bar")
+        end
       end
 
-      context "with ack mode set to 'auto'" do
-        it "does nothing if the client is no longer connected"
+      context "with ack mode set to 'auto'", ack: "auto" do
+        it "does nothing if the client is no longer connected" do
+          client_io.close
+          subscription.message("What üp?", "foo" => "Bar")
+        end
       end
 
-      context "with ack mode set to 'client-individual'" do
+      context "with ack mode set to 'client-individual'", ack: "client-individual" do
         it "blocks until the client sends an ACK frame"
         it "does not acknowledge previous frames"
         it "blocks until the clients sends a NACK frame"
         it "raises an error if the client has disconnected"
       end
 
-      context "with ack mode set to 'client'" do
+      context "with ack mode set to 'client'", ack: "client" do
         it "blocks until the client sends an ACK frame"
         it "acknowledges previous frames"
         it "blocks until the clients sends a NACK frame"
@@ -428,18 +438,18 @@ describe Stompede::Base do
     end
 
     describe "#message!" do
-      context "with ack mode set to 'auto'" do
+      context "with ack mode set to 'auto'", ack: "auto" do
         it "does nothing if the client is no longer connected"
       end
 
-      context "with ack mode set to 'client-individual'" do
+      context "with ack mode set to 'client-individual'", ack: "client-individual" do
         it "blocks until the client sends an ACK frame"
         it "does not acknowledge previous frames"
         it "raises an error if the client sends a NACK frame"
         it "raises an error if the client has disconnected"
       end
 
-      context "with ack mode set to 'client'" do
+      context "with ack mode set to 'client'", ack: "client" do
         it "blocks until the client sends an ACK frame"
         it "acknowledges previous frames"
         it "raises an error if the client sends a NACK frame"

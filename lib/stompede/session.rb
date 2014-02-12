@@ -17,6 +17,7 @@ module Stompede
 
     def safe_write(value)
       @app_actor.schedule { @socket.safe_write(value) }
+    rescue Celluloid::DeadActorError
     end
 
     def close
