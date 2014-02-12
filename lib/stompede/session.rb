@@ -55,10 +55,10 @@ module Stompede
         end
       end
     rescue Disconnected, ClientError, StompParser::Error => e
-      write_error(e)
+      @socket.safe_write(ErrorFrame.new(e))
       @app.terminate
     rescue => e
-      write_error(e)
+      @socket.safe_write(ErrorFrame.new(e))
       raise
     end
 
@@ -68,12 +68,6 @@ module Stompede
     rescue => e
       frame.error!(e) unless frame.detached?
       raise e
-    end
-
-    def write_error(error, headers={})
-      body = "#{error.class}: #{error.message}\n\n#{error.backtrace.join("\n")}"
-      headers["content-type"] = "text/plain"
-      @socket.safe_write(StompParser::Frame.new("ERROR", headers, body))
     end
 
     def subscribe(frame)

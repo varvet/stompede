@@ -11,6 +11,7 @@ require "stompede/error"
 require "stompede/base"
 require "stompede/safe_socket"
 require "stompede/frame"
+require "stompede/error_frame"
 require "stompede/session"
 require "stompede/subscription"
 

@@ -12,7 +12,7 @@ module Stompede
     end
 
     def to_str
-      StompParser::Frame.new(command, headers, body).to_str
+      StompParser::Frame.new(command.to_s.upcase, headers, body).to_str
     end
     alias_method :to_s, :to_str
 
@@ -45,12 +45,10 @@ module Stompede
     end
 
     def error!(error, error_headers = {})
-      body = "#{error.class}: #{error.message}\n\n#{Array(error.backtrace).join("\n")}"
-      error_headers["content-type"] = "text/plain"
       if headers["receipt"] and not command == :connect
         error_headers["receipt-id"] = headers["receipt"]
       end
-      session.safe_write(StompParser::Frame.new("ERROR", error_headers, body).to_str)
+      session.safe_write(ErrorFrame.new(error, error_headers).to_str)
       session.close
     end
 
