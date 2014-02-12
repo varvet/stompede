@@ -47,7 +47,9 @@ module Stompede
           case frame.command
           when "CONNECT", "STOMP"
             unless frame["accept-version"].split(",").include?(STOMP_VERSION)
-              raise ClientError.new("client must support STOMP version #{STOMP_VERSION}", version: STOMP_VERSION)
+              error = ClientError.new("client must support STOMP version #{STOMP_VERSION}")
+              frame.error!(error, version: STOMP_VERSION)
+              raise error
             end
             dispatch(:on_connect, frame)
           when "DISCONNECT"
@@ -63,9 +65,7 @@ module Stompede
           end
         end
       end
-    rescue Disconnected
-      @app.terminate
-    rescue ClientError, StompParser::Error => e
+    rescue Disconnected, ClientError, StompParser::Error => e
       write_error(e)
       @app.terminate
     rescue => e
@@ -84,8 +84,6 @@ module Stompede
     def write_error(error, headers={})
       body = "#{error.class}: #{error.message}\n\n#{error.backtrace.join("\n")}"
       headers["content-type"] = "text/plain"
-      headers.merge!(error.headers) if error.respond_to?(:headers)
-
       @socket.write(StompParser::Frame.new("ERROR", headers, body).to_str)
     rescue IOError
       # ignore, as per STOMP spec, the connection might already be gone.
