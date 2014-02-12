@@ -131,6 +131,18 @@ describe Stompede::Base do
         latch.receive(callback)
         client_io.should receive_error(TestApp::MooError, "MOOOO!", "receipt-id" => nil)
       end
+
+      it "sends a receipt when processing is finished" do
+        send_message(client_io, command, headers.merge("receipt" => "1234"))
+        frame = latch.receive(callback).last
+
+        client_io.should be_an_empty_socket
+        frame.receipt!(foo: "bar")
+        message = parse_message(client_io)
+        message.command.should eq("RECEIPT")
+        message["receipt-id"].should eq("1234")
+        message["foo"].should eq("bar")
+      end
     end
   end
 

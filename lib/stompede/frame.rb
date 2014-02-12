@@ -1,8 +1,9 @@
 module Stompede
   class Frame
-    attr_reader :command, :headers, :body
+    attr_reader :session, :command, :headers, :body
 
-    def initialize(command, headers, body)
+    def initialize(session, command, headers, body)
+      @session = session
       @command = command
       @headers = headers
       @body = body
@@ -27,6 +28,13 @@ module Stompede
 
     def detached?
       @detached
+    end
+
+    def receipt!(receipt_headers = {})
+      receipt_headers["receipt-id"] = headers["receipt"]
+      session.write(StompParser::Frame.new("RECEIPT", receipt_headers, "").to_str)
+    rescue IOError
+      raise Disconnected
     end
   end
 end

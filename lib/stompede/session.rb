@@ -43,7 +43,7 @@ module Stompede
       loop do
         chunk = safe_io { @socket.readpartial(Stompede::BUFFER_SIZE) }
         parser.parse(chunk) do |frame|
-          frame = Frame.new(frame.command, frame.headers, frame.body)
+          frame = Frame.new(self, frame.command, frame.headers, frame.body)
           case frame.command
           when "CONNECT", "STOMP"
             unless frame["accept-version"].split(",").include?(STOMP_VERSION)
