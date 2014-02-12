@@ -97,7 +97,7 @@ describe Stompede::Base do
     end
   end
 
-  shared_examples_for "receipts" do |command, callback, headers = {}|
+  shared_examples_for "a callback with receipts" do |command, callback, headers = {}|
     it "sends a receipt when the client sends a #{command} frame with a receipt header" do
       send_message(client_io, command, headers.merge("receipt" => "1234"))
       latch.receive(callback)
@@ -145,7 +145,7 @@ describe Stompede::Base do
       server_io.should_not be_closed
     end
 
-    it_behaves_like "receipts", "DISCONNECT", :on_disconnect
+    it_behaves_like "a callback with receipts", "DISCONNECT", :on_disconnect
 
     it "is not called when a socket is closed" do
       client_io.close
@@ -170,7 +170,7 @@ describe Stompede::Base do
       server_io.should_not be_closed
     end
 
-    it_behaves_like "receipts", "SEND", :on_send
+    it_behaves_like "a callback with receipts", "SEND", :on_send
 
     it "closes socket when it throws an error", error: :on_send do
       send_message(client_io, "SEND", "Hello", "destination" => "/foo/bar", "foo" => "Bar")
@@ -190,7 +190,7 @@ describe Stompede::Base do
       server_io.should_not be_closed
     end
 
-    it_behaves_like "receipts", "SUBSCRIBE", :on_subscribe, id: "1", destination: "/foo/bar"
+    it_behaves_like "a callback with receipts", "SUBSCRIBE", :on_subscribe, id: "1", destination: "/foo/bar"
 
     it "closes socket when it throws an error", error: :on_subscribe do
       send_message(client_io, "SUBSCRIBE", "destination" => "/foo/bar", "id" => "1", "foo" => "Bar")
@@ -245,7 +245,7 @@ describe Stompede::Base do
       server_io.should_not be_closed
     end
 
-    it_behaves_like "receipts", "UNSUBSCRIBE", :on_unsubscribe, id: "1"
+    it_behaves_like "a callback with receipts", "UNSUBSCRIBE", :on_unsubscribe, id: "1"
 
     it "closes socket when it throws an error", error: :on_unsubscribe do
       send_message(client_io, "UNSUBSCRIBE", "id" => "1")
