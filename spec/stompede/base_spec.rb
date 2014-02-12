@@ -144,13 +144,33 @@ describe Stompede::Base do
         message["foo"].should eq("bar")
       end
 
-      it "does nothing when frame does not request a receipt" do
+      it "sends an ERROR frame with receipt and closes connection when processing fails" do
+        send_message(client_io, command, headers.merge("receipt" => "1234"))
+        frame = latch.receive(callback).last
+
+        client_io.should be_an_empty_socket
+        frame.error!(RuntimeError.new("it died"), foo: "bar")
+        client_io.should receive_error(RuntimeError, "it died", "receipt-id" => "1234", "foo" => "bar")
+      end
+    end
+
+    context "with detached frame and no receipt requested" do
+      it "does nothing when processing is finished" do
         send_message(client_io, command, headers)
         frame = latch.receive(callback).last
 
         client_io.should be_an_empty_socket
         frame.receipt!(foo: "bar")
         client_io.should be_an_empty_socket
+      end
+
+      it "sends a regular ERROR frame and closes connection when processing fails" do
+        send_message(client_io, command, headers)
+        frame = latch.receive(callback).last
+
+        client_io.should be_an_empty_socket
+        frame.error!(RuntimeError.new("it died"), foo: "bar")
+        client_io.should receive_error(RuntimeError, "it died", "receipt-id" => nil, "foo" => "bar")
       end
     end
   end

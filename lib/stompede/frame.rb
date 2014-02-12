@@ -38,5 +38,15 @@ module Stompede
     rescue IOError
       raise Disconnected
     end
+
+    def error!(error, error_headers = {})
+      body = "#{error.class}: #{error.message}\n\n#{Array(error.backtrace).join("\n")}"
+      error_headers["content-type"] = "text/plain"
+      error_headers["receipt-id"] = headers["receipt"] if headers["receipt"]
+      error_headers.merge!(error.headers) if error.respond_to?(:headers)
+
+      session.write(StompParser::Frame.new("ERROR", error_headers, body).to_str)
+      session.close
+    end
   end
 end
