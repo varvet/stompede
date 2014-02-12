@@ -7,6 +7,7 @@ module Stompede
       @command = command
       @headers = headers
       @body = body
+      @detached = false
     end
 
     def to_str
