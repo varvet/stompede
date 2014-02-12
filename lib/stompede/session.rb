@@ -83,16 +83,14 @@ module Stompede
 
     def receipt(frame)
       yield
-      if frame["receipt"] and not frame.detached?
-        safe_io { @socket.write(StompParser::Frame.new("RECEIPT", { "receipt-id" => frame["receipt"] }, "").to_str) }
-      end
+      frame.receipt! unless frame.detached?
     rescue => e
-      if frame["receipt"] and not frame.detached?
-        write_error(e, "receipt-id" => frame["receipt"])
+      if frame.detached?
+        raise e
       else
-        write_error(e)
+        frame.error!(e)
+        raise HandlerError.new(e)
       end
-      raise HandlerError.new(e)
     end
 
     def write_error(error, headers={})
