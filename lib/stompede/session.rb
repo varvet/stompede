@@ -8,27 +8,25 @@ module Stompede
     end
 
     def subscriptions
-      @app_actor.schedule do
-        @subscriptions.values
-      end
+      @app_actor.schedule { @subscriptions.values }
     end
 
     def write(value)
-      @app_actor.schedule do
-        @socket.write(value.to_str)
-      end
+      @app_actor.schedule { @socket.write(value) }
+    end
+
+    def safe_write(value)
+      @app_actor.schedule { @socket.safe_write(value) }
     end
 
     def close
-      @app_actor.schedule do
-        @socket.close rescue nil
-      end
+      @app_actor.schedule { @socket.close }
     end
 
   private
 
     def cleanup
-      @socket.close rescue nil
+      @socket.close
       @subscriptions.each do |id, subscription|
         @app.on_unsubscribe(subscription, nil)
       end
@@ -41,8 +39,7 @@ module Stompede
       @app.on_open
 
       loop do
-        chunk = safe_io { @socket.readpartial(Stompede::BUFFER_SIZE) }
-        parser.parse(chunk) do |frame|
+        parser.parse(@socket.read) do |frame|
           frame = Frame.new(self, frame.command, frame.headers, frame.body)
           case frame.command
           when "CONNECT", "STOMP"
@@ -84,9 +81,7 @@ module Stompede
     def write_error(error, headers={})
       body = "#{error.class}: #{error.message}\n\n#{error.backtrace.join("\n")}"
       headers["content-type"] = "text/plain"
-      @socket.write(StompParser::Frame.new("ERROR", headers, body).to_str)
-    rescue IOError
-      # ignore, as per STOMP spec, the connection might already be gone.
+      @socket.safe_write(StompParser::Frame.new("ERROR", headers, body))
     end
 
     def subscribe(frame)
@@ -106,12 +101,6 @@ module Stompede
         raise ClientError, "subscription with id #{subscription.id.inspect} does not exist"
       end
       @subscriptions.delete(subscription.id)
-    end
-
-    def safe_io
-      yield
-    rescue IOError
-      raise Disconnected, "client disconnected"
     end
   end
 end

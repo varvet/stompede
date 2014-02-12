@@ -21,8 +21,7 @@ module Stompede
         "destination" => destination,
         "message-id" => SecureRandom.uuid
       }
-      message = StompParser::Frame.new("MESSAGE", headers, body)
-      @session.write(message)
+      @session.write(StompParser::Frame.new("MESSAGE", headers, body))
     end
 
     def validate!

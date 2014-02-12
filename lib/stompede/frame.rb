@@ -36,13 +36,11 @@ module Stompede
         receipt_headers["version"] = STOMP_VERSION
         receipt_headers["server"] = "Stompede/#{Stompede::VERSION}"
         receipt_headers["session"] = SecureRandom.uuid
-        session.write(StompParser::Frame.new("CONNECTED", receipt_headers, "").to_str)
+        session.write(StompParser::Frame.new("CONNECTED", receipt_headers, ""))
       elsif headers["receipt"]
         receipt_headers["receipt-id"] = headers["receipt"]
-        session.write(StompParser::Frame.new("RECEIPT", receipt_headers, "").to_str)
+        session.write(StompParser::Frame.new("RECEIPT", receipt_headers, ""))
       end
-    rescue IOError
-      raise Disconnected
     end
 
     def error!(error, error_headers = {})
@@ -51,9 +49,7 @@ module Stompede
       if headers["receipt"] and not connect?
         error_headers["receipt-id"] = headers["receipt"]
       end
-      session.write(StompParser::Frame.new("ERROR", error_headers, body).to_str)
-    rescue IOError
-    ensure
+      session.safe_write(StompParser::Frame.new("ERROR", error_headers, body).to_str)
       session.close
     end
 

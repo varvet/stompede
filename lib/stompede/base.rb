@@ -7,7 +7,7 @@ module Stompede
     attr_reader :session
 
     def initialize(socket)
-      @session = Session.new(self, socket)
+      @session = Session.new(self, SafeSocket.new(socket))
       yield(Actor.current) if block_given?
       async.open_session
     end
