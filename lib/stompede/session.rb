@@ -41,13 +41,9 @@ module Stompede
       loop do
         parser.parse(@socket.read) do |frame|
           frame = Frame.new(self, frame.command, frame.headers, frame.body)
+          frame.validate!
           case frame.command
           when "CONNECT", "STOMP"
-            unless frame["accept-version"].split(",").include?(STOMP_VERSION)
-              error = ClientError.new("client must support STOMP version #{STOMP_VERSION}")
-              frame.error!(error, version: STOMP_VERSION)
-              raise error
-            end
             dispatch(:on_connect, frame)
           when "DISCONNECT"
             dispatch(:on_disconnect, frame)
@@ -86,7 +82,6 @@ module Stompede
 
     def subscribe(frame)
       subscription = Subscription.new(self, frame)
-      subscription.validate!
       if @subscriptions[subscription.id]
         raise ClientError, "subscription with id #{subscription.id.inspect} already exists"
       end
@@ -96,7 +91,6 @@ module Stompede
 
     def unsubscribe(frame)
       subscription = Subscription.new(self, frame)
-      subscription.validate!
       unless @subscriptions[subscription.id]
         raise ClientError, "subscription with id #{subscription.id.inspect} does not exist"
       end

@@ -23,12 +23,5 @@ module Stompede
       }
       @session.write(StompParser::Frame.new("MESSAGE", headers, body))
     end
-
-    def validate!
-      if @frame.command == "SUBSCRIBE"
-        raise ClientError, "subscription does not include a destination" unless destination
-      end
-      raise ClientError, "subscription does not include an id" unless id
-    end
   end
 end

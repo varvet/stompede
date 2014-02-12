@@ -53,6 +53,22 @@ module Stompede
       session.close
     end
 
+    def validate!
+      if command == "SUBSCRIBE"
+        raise ClientError, "subscription does not include a destination" unless headers["destination"]
+      end
+      if command == "SUBSCRIBE" or command == "UNSUBSCRIBE"
+        raise ClientError, "subscription does not include an id" unless headers["id"]
+      end
+      if connect?
+        unless headers["accept-version"].split(",").include?(STOMP_VERSION)
+          error = ClientError.new("client must support STOMP version #{STOMP_VERSION}")
+          error!(error, version: STOMP_VERSION)
+          raise error
+        end
+      end
+    end
+
   private
 
     def connect?
