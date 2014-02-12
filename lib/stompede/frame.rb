@@ -54,6 +54,8 @@ module Stompede
       error_headers.merge!(error.headers) if error.respond_to?(:headers)
 
       session.write(StompParser::Frame.new("ERROR", error_headers, body).to_str)
+    rescue IOError
+    ensure
       session.close
     end
 

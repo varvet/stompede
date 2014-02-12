@@ -21,7 +21,7 @@ module Stompede
 
     def close
       @app_actor.schedule do
-        @socket.close
+        @socket.close rescue nil
       end
     end
 
