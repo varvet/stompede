@@ -44,17 +44,17 @@ module Stompede
           frame.validate!
           case frame.command
           when "CONNECT", "STOMP"
-            dispatch(:on_connect, frame)
+            dispatch(:connect, frame)
           when "DISCONNECT"
-            dispatch(:on_disconnect, frame)
+            dispatch(:disconnect, frame)
           when "SEND"
-            dispatch(:on_send, frame)
+            dispatch(:send, frame)
           when "SUBSCRIBE"
             subscription = subscribe(frame)
-            dispatch(:on_subscribe, subscription, frame)
+            dispatch(:subscribe, subscription, frame)
           when "UNSUBSCRIBE"
             subscription = unsubscribe(frame)
-            dispatch(:on_unsubscribe, subscription, frame)
+            dispatch(:unsubscribe, subscription, frame)
           end
         end
       end
@@ -67,7 +67,7 @@ module Stompede
     end
 
     def dispatch(callback, *args, frame)
-      @app.send(callback, *args, frame)
+      @app.send(:"on_#{callback}", *args, frame)
       frame.receipt! unless frame.detached?
     rescue => e
       frame.error!(e) unless frame.detached?
