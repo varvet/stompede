@@ -32,7 +32,7 @@ module Stompede
     end
 
     def receipt!(receipt_headers = {})
-      if headers["receipt"]
+      if headers["receipt"] and not connect?
         receipt_headers["receipt-id"] = headers["receipt"]
         session.write(StompParser::Frame.new("RECEIPT", receipt_headers, "").to_str)
       end
@@ -43,11 +43,19 @@ module Stompede
     def error!(error, error_headers = {})
       body = "#{error.class}: #{error.message}\n\n#{Array(error.backtrace).join("\n")}"
       error_headers["content-type"] = "text/plain"
-      error_headers["receipt-id"] = headers["receipt"] if headers["receipt"]
+      if headers["receipt"] and not connect?
+        error_headers["receipt-id"] = headers["receipt"]
+      end
       error_headers.merge!(error.headers) if error.respond_to?(:headers)
 
       session.write(StompParser::Frame.new("ERROR", error_headers, body).to_str)
       session.close
+    end
+
+  private
+
+    def connect?
+      ["STOMP", "CONNECTED"].include?(command)
     end
   end
 end
