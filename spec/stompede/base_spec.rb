@@ -96,6 +96,10 @@ describe Stompede::Base do
       app_monitor.wait_for_terminate
     end
 
+    it "crashes when the client sends another frame before the CONNECT frame"
+
+    it "crashes when the client sends multiple CONNECT frames"
+
     context "with detached frame", detach: :on_connect do
       it "does not send a CONNECTED frame when the client sends a CONNECT" do
         send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
@@ -228,6 +232,8 @@ describe Stompede::Base do
       latch.invocations_until(:on_close).should_not include(:on_disconnect)
       client_io.should receive_error(TestApp::MooError, "MOOOO!")
     end
+
+    it "crashes when the client sends further frames after the disconnect frame"
   end
 
   describe "#on_send" do
@@ -398,7 +404,47 @@ describe Stompede::Base do
         message.content_length.should eq(9)
       end
 
-      it "does nothing if the client is no longer connected"
+      context "with ack mode not set" do
+        it "does nothing if the client is no longer connected"
+      end
+
+      context "with ack mode set to 'auto'" do
+        it "does nothing if the client is no longer connected"
+      end
+
+      context "with ack mode set to 'client-individual'" do
+        it "blocks until the client sends an ACK frame"
+        it "does not acknowledge previous frames"
+        it "blocks until the clients sends a NACK frame"
+        it "raises an error if the client has disconnected"
+      end
+
+      context "with ack mode set to 'client'" do
+        it "blocks until the client sends an ACK frame"
+        it "acknowledges previous frames"
+        it "blocks until the clients sends a NACK frame"
+        it "raises an error if the client has disconnected"
+      end
+    end
+
+    describe "#message!" do
+      context "with ack mode set to 'auto'" do
+        it "does nothing if the client is no longer connected"
+      end
+
+      context "with ack mode set to 'client-individual'" do
+        it "blocks until the client sends an ACK frame"
+        it "does not acknowledge previous frames"
+        it "raises an error if the client sends a NACK frame"
+        it "raises an error if the client has disconnected"
+      end
+
+      context "with ack mode set to 'client'" do
+        it "blocks until the client sends an ACK frame"
+        it "acknowledges previous frames"
+        it "raises an error if the client sends a NACK frame"
+        it "raises an error if the client has disconnected"
+      end
     end
   end
 end
