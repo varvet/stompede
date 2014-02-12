@@ -63,8 +63,6 @@ module Stompede
           end
         end
       end
-    rescue HandlerError => e
-      raise e.error
     rescue Disconnected
       @app.terminate
     rescue ClientError, StompParser::Error => e
@@ -79,12 +77,8 @@ module Stompede
       @app.send(callback, *args, frame)
       frame.receipt! unless frame.detached?
     rescue => e
-      if frame.detached?
-        raise e
-      else
-        frame.error!(e)
-        raise HandlerError.new(e)
-      end
+      frame.error!(e) unless frame.detached?
+      raise e
     end
 
     def write_error(error, headers={})
