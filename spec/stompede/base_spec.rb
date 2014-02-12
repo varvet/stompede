@@ -143,6 +143,15 @@ describe Stompede::Base do
         message["receipt-id"].should eq("1234")
         message["foo"].should eq("bar")
       end
+
+      it "does nothing when frame does not request a receipt" do
+        send_message(client_io, command, headers)
+        frame = latch.receive(callback).last
+
+        client_io.should be_an_empty_socket
+        frame.receipt!(foo: "bar")
+        client_io.should be_an_empty_socket
+      end
     end
   end
 

@@ -31,8 +31,10 @@ module Stompede
     end
 
     def receipt!(receipt_headers = {})
-      receipt_headers["receipt-id"] = headers["receipt"]
-      session.write(StompParser::Frame.new("RECEIPT", receipt_headers, "").to_str)
+      if headers["receipt"]
+        receipt_headers["receipt-id"] = headers["receipt"]
+        session.write(StompParser::Frame.new("RECEIPT", receipt_headers, "").to_str)
+      end
     rescue IOError
       raise Disconnected
     end
