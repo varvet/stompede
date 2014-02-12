@@ -43,16 +43,12 @@ module Stompede
           frame = Frame.new(self, frame.command, frame.headers, frame.body)
           frame.validate!
           case frame.command
-          when "CONNECT", "STOMP"
-            dispatch(:connect, frame)
-          when "DISCONNECT"
-            dispatch(:disconnect, frame)
-          when "SEND"
-            dispatch(:send, frame)
-          when "SUBSCRIBE"
+          when :connect, :disconnect, :send
+            dispatch(frame.command, frame)
+          when :subscribe
             subscription = subscribe(frame)
             dispatch(:subscribe, subscription, frame)
-          when "UNSUBSCRIBE"
+          when :unsubscribe
             subscription = unsubscribe(frame)
             dispatch(:unsubscribe, subscription, frame)
           end
