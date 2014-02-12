@@ -32,7 +32,12 @@ module Stompede
     end
 
     def receipt!(receipt_headers = {})
-      if headers["receipt"] and not connect?
+      if connect?
+        receipt_headers["version"] = STOMP_VERSION
+        receipt_headers["server"] = "Stompede/#{Stompede::VERSION}"
+        receipt_headers["session"] = SecureRandom.uuid
+        session.write(StompParser::Frame.new("CONNECTED", receipt_headers, "").to_str)
+      elsif headers["receipt"]
         receipt_headers["receipt-id"] = headers["receipt"]
         session.write(StompParser::Frame.new("RECEIPT", receipt_headers, "").to_str)
       end

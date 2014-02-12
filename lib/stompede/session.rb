@@ -50,12 +50,6 @@ module Stompede
               raise ClientError.new("client must support STOMP version #{STOMP_VERSION}", version: STOMP_VERSION)
             end
             dispatch(:on_connect, frame)
-            headers = {
-              "version" => STOMP_VERSION,
-              "server" => "Stompede/#{Stompede::VERSION}",
-              "session" => SecureRandom.uuid
-            }
-            safe_io { @socket.write(StompParser::Frame.new("CONNECTED", headers, "").to_str) }
           when "DISCONNECT"
             dispatch(:on_disconnect, frame)
           when "SEND"

@@ -95,6 +95,37 @@ describe Stompede::Base do
       client_io.should receive_error(Stompede::ClientError, "client must support STOMP version #{Stompede::STOMP_VERSION}", version: Stompede::STOMP_VERSION)
       app_monitor.wait_for_terminate
     end
+
+    context "with detached frame", detach: :on_connect do
+      it "does not send a CONNECTED frame when the client sends a CONNECT" do
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
+        latch.receive(:on_connect)
+
+        client_io.should be_an_empty_socket
+        app.should be_alive
+      end
+
+      it "sends a CONNECTED frame when processing is finished" do
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
+        frame = latch.receive(:on_connect).last
+
+        client_io.should be_an_empty_socket
+        frame.receipt!(foo: "bar")
+        message = parse_message(client_io)
+        message.command.should eq("CONNECTED")
+        message["foo"].should eq("bar")
+        message["receipt-id"].should be_nil
+      end
+
+      it "sends an ERROR frame and closes connection when processing fails" do
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
+        frame = latch.receive(:on_connect).last
+
+        client_io.should be_an_empty_socket
+        frame.error!(RuntimeError.new("it died"), foo: "bar")
+        client_io.should receive_error(RuntimeError, "it died", "foo" => "bar")
+      end
+    end
   end
 
   shared_examples_for "a callback with receipts" do |command, callback, headers = {}|
