@@ -59,7 +59,7 @@ module Helpers
     parser = StompParser::Parser.new
 
     Timeout.timeout(0.5) do
-      parser.parse(io.readpartial(Stompede::BUFFER_SIZE)) do |message|
+      parser.parse(io.readpartial(Stompede::Connector::BUFFER_SIZE)) do |message|
         return message
       end
     end

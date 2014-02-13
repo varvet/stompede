@@ -1,5 +1,7 @@
 module Stompede
   class Connector
+    BUFFER_SIZE = 1024 * 16
+
     include Celluloid::IO
     include Celluloid::Logger
 
@@ -29,7 +31,7 @@ module Stompede
 
       loop do
         chunk = begin
-          socket.readpartial(1024 * 16)
+          socket.readpartial(BUFFER_SIZE)
         rescue IOError => e
           return
         end

@@ -16,7 +16,6 @@ require "stompede/session"
 require "stompede/subscription"
 
 module Stompede
-  BUFFER_SIZE = 10 * 1024
   STOMP_VERSION = "1.2" # version of the STOMP protocol we support
 
   class TCPServer
