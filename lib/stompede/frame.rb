@@ -32,7 +32,7 @@ module Stompede
       @detached
     end
 
-    def receipt!(receipt_headers = {})
+    def receipt(receipt_headers = {})
       if command == :connect
         receipt_headers["version"] = STOMP_VERSION
         receipt_headers["server"] = "Stompede/#{Stompede::VERSION}"
@@ -44,7 +44,7 @@ module Stompede
       end
     end
 
-    def error!(error, error_headers = {})
+    def error(error, error_headers = {})
       if headers["receipt"] and not command == :connect
         error_headers["receipt-id"] = headers["receipt"]
       end
@@ -61,7 +61,7 @@ module Stompede
       if command == :connect
         unless headers["accept-version"].split(",").include?(STOMP_VERSION)
           error = ClientError.new("client must support STOMP version #{STOMP_VERSION}")
-          error!(error, version: STOMP_VERSION)
+          error(error, version: STOMP_VERSION)
           raise error
         end
       end

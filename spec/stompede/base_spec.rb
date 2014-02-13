@@ -141,7 +141,7 @@ describe Stompede::Base do
         frame = latch.receive(:connect).last
 
         client_io.should be_an_empty_socket
-        frame.receipt!(foo: "bar")
+        frame.receipt(foo: "bar")
         message = parse_message(client_io)
         message.command.should eq("CONNECTED")
         message["foo"].should eq("bar")
@@ -153,7 +153,7 @@ describe Stompede::Base do
         frame = latch.receive(:connect).last
 
         client_io.should be_an_empty_socket
-        frame.error!(RuntimeError.new("it died"), foo: "bar")
+        frame.error(RuntimeError.new("it died"), foo: "bar")
         client_io.should receive_error(RuntimeError, "it died", "foo" => "bar")
       end
     end
@@ -199,7 +199,7 @@ describe Stompede::Base do
         frame = latch.receive(callback).last
 
         client_io.should be_an_empty_socket
-        frame.receipt!(foo: "bar")
+        frame.receipt(foo: "bar")
         message = parse_message(client_io)
         message.command.should eq("RECEIPT")
         message["receipt-id"].should eq("1234")
@@ -211,7 +211,7 @@ describe Stompede::Base do
         frame = latch.receive(callback).last
 
         client_io.should be_an_empty_socket
-        frame.error!(RuntimeError.new("it died"), foo: "bar")
+        frame.error(RuntimeError.new("it died"), foo: "bar")
         client_io.should receive_error(RuntimeError, "it died", "receipt-id" => "1234", "foo" => "bar")
       end
     end
@@ -222,7 +222,7 @@ describe Stompede::Base do
         frame = latch.receive(callback).last
 
         client_io.should be_an_empty_socket
-        frame.receipt!(foo: "bar")
+        frame.receipt(foo: "bar")
         client_io.should be_an_empty_socket
       end
 
@@ -231,7 +231,7 @@ describe Stompede::Base do
         frame = latch.receive(callback).last
 
         client_io.should be_an_empty_socket
-        frame.error!(RuntimeError.new("it died"), foo: "bar")
+        frame.error(RuntimeError.new("it died"), foo: "bar")
         client_io.should receive_error(RuntimeError, "it died", "receipt-id" => nil, "foo" => "bar")
       end
     end

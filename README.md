@@ -120,9 +120,9 @@ class MyApp < Stompede::Base
 
     def do_work(frame)
       # ... do heavy work
-      frame.receipt!
+      frame.receipt
     rescue => e
-      frame.error!(e)
+      frame.error(e)
       raise
     end
   end
@@ -139,8 +139,8 @@ end
 ```
 
 The call to `frame.detach!` tells Stompede not to automatically send a receipt.
-You then need to manually send a receipt by calling `frame.receipt!` or
-`frame.error!`. These methods are thread-safe, so you can call them from
+You then need to manually send a receipt by calling `frame.receipt` or
+`frame.error`. These methods are thread-safe, so you can call them from
 another actor.
 
 ### The ack-mode header, ACK and NACK

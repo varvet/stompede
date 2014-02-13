@@ -49,12 +49,12 @@ module Stompede
         dispatch(:unsubscribe, subscription, frame)
       end
 
-      frame.receipt! unless frame.detached?
+      frame.receipt unless frame.detached?
     rescue => e
       if frame.detached?
         session.error(e)
       else
-        frame.error!(e)
+        frame.error(e)
       end
 
       if e.is_a?(ClientError) or e.is_a?(Disconnected)
