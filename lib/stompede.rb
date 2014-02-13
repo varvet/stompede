@@ -28,7 +28,7 @@ module Stompede
       server = ::TCPServer.new(*args)
       loop do
         socket = server.accept
-        App.new(Celluloid::IO::TCPSocket.new(socket))
+        @app_klass.new(Celluloid::IO::TCPSocket.new(socket))
       end
     end
   end
@@ -53,7 +53,7 @@ module Stompede
       Reel::Server.run(*args) do |connection|
         connection.each_request do |request|
           if request.websocket?
-            App.new(Socket.new(request.websocket))
+            @app_klass.new(Socket.new(request.websocket))
           else
             request.respond :ok, "Stompede"
           end
