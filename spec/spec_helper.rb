@@ -3,7 +3,6 @@ require "stompede"
 require "pry"
 require "timeout"
 
-require "support/test_app"
 require "support/crash_monitor"
 require "support/helpers"
 

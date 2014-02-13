@@ -77,7 +77,9 @@ module Helpers
         headers.each do |key, value|
           message[key.to_s].should == value
         end
-        io.should be_eof
+        Timeout.timeout(0.5) do
+          io.should be_eof
+        end
       rescue => e
         @error = e
         raise

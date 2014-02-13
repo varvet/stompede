@@ -48,8 +48,7 @@ module Stompede
       if headers["receipt"] and not command == :connect
         error_headers["receipt-id"] = headers["receipt"]
       end
-      session.safe_write(ErrorFrame.new(error, error_headers).to_str)
-      session.close
+      session.error(error, error_headers)
     end
 
     def validate!

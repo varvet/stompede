@@ -1,21 +1,14 @@
 module Stompede
   class Base
-    include Celluloid::IO
+    include Celluloid
 
-    finalizer :cleanup_session
+    finalizer :cleanup
 
     attr_reader :session
 
-    def initialize(socket)
-      @session = Session.new(self, SafeSocket.new(socket))
-      yield(Actor.current) if block_given?
-      async.open_session
+    def initialize(session)
+      @session = session
     end
-
-    def schedule
-      yield
-    end
-    execute_block_on_receiver :schedule
 
     def on_open
     end
@@ -38,14 +31,44 @@ module Stompede
     def on_close
     end
 
-  private
-
-    def open_session
-      @session.send(:open)
+    def dispatch(command, *args)
+      public_send(:"on_#{command}", *args)
     end
 
-    def cleanup_session
-      @session.send(:cleanup)
+    def raw_dispatch(frame)
+      frame.validate!
+
+      case frame.command
+      when :connect, :disconnect, :send
+        dispatch(frame.command, frame)
+      when :subscribe
+        subscription = session.subscribe(frame)
+        dispatch(:subscribe, subscription, frame)
+      when :unsubscribe
+        subscription = session.unsubscribe(frame)
+        dispatch(:unsubscribe, subscription, frame)
+      end
+
+      frame.receipt! unless frame.detached?
+    rescue => e
+      if frame.detached?
+        session.error(e)
+      else
+        frame.error!(e)
+      end
+
+      if e.is_a?(ClientError) or e.is_a?(Disconnected)
+        terminate
+      else
+        raise e
+      end
+    end
+
+    def cleanup
+      @session.subscriptions.each do |subscription|
+        dispatch(:unsubscribe, subscription, nil)
+      end
+      dispatch(:close)
     end
   end
 end

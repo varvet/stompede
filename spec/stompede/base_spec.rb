@@ -1,6 +1,9 @@
 # encoding: UTF-8
 
+class MooError < StandardError; end
+
 describe Stompede::Base do
+  attr_accessor :app
   # There is no TCPSocket.pair :(
   let(:sockets) do
     server = TCPServer.new("127.0.0.1", 0)
@@ -12,10 +15,34 @@ describe Stompede::Base do
   let(:server_io) { Celluloid::IO::TCPSocket.new(sockets[1]) }
 
   let(:app_monitor) { CrashMonitor.new }
-  let!(:app) do
-    TestApp.new(server_io, latch, error: example.metadata[:error], detach: example.metadata[:detach]) do |app|
-      app_monitor.observe(app)
+  let(:app_klass) do
+    spec = self
+
+    Class.new(Stompede::Base) do
+      define_method(:initialize) do |session|
+        @session = session
+        @error = Array(spec.example.metadata[:error])
+        @detach = Array(spec.example.metadata[:detach])
+        spec.app_monitor.observe(Celluloid::Actor.current)
+        spec.app = Celluloid::Actor.current
+      end
+
+      define_method(:dispatch) do |command, *args|
+        args.last.detach! if @detach.include?(command)
+        spec.latch.push([command, *args])
+        raise MooError, "MOOOO!" if @error.include?(command)
+      end
     end
+  end
+
+  let(:connector) { Stompede::Connector.new(app_klass) }
+
+  before do
+    connector.async.connect(server_io)
+  end
+
+  after do
+    connector.should be_alive
   end
 
   describe "generic client errors" do
@@ -28,7 +55,7 @@ describe Stompede::Base do
 
   describe "#on_open" do
     it "is called when a socket is opened" do
-      latch.receive(:on_open)
+      latch.receive(:open)
       app.should be_alive
     end
   end
@@ -36,18 +63,18 @@ describe Stompede::Base do
   describe "#on_close" do
     it "is called when a socket is closed" do
       client_io.close
-      latch.receive(:on_close)
+      latch.receive(:close)
       app_monitor.wait_for_terminate
     end
 
-    it "is called even when app throws an error", error: :on_open do
-      latch.receive(:on_close)
-      client_io.should receive_error(TestApp::MooError, "MOOOO!")
+    it "is called even when app throws an error", error: :open do
+      latch.receive(:close)
+      client_io.should receive_error(MooError, "MOOOO!")
     end
 
-    it "closes socket even when on_close dies", error: [:on_open, :on_close] do
-      latch.receive(:on_close)
-      client_io.should receive_error(TestApp::MooError, "MOOOO!")
+    it "closes socket even when on_close dies", error: [:open, :close] do
+      latch.receive(:close)
+      client_io.should receive_error(MooError, "MOOOO!")
     end
   end
 
@@ -55,20 +82,20 @@ describe Stompede::Base do
     it "is called when a client sends a CONNECT frame" do
       send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
 
-      message = latch.receive(:on_connect).first
+      message = latch.receive(:connect).first
       message["foo"].should eq("Bar")
     end
 
     it "is called when a client sends a STOMP frame" do
       send_message(client_io, "STOMP", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
 
-      message = latch.receive(:on_connect).first
+      message = latch.receive(:connect).first
       message["foo"].should eq("Bar")
     end
 
     it "does not send a receipt, because the STOMP spec says so" do
       send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "receipt" => "1234")
-      latch.receive(:on_connect)
+      latch.receive(:connect)
       message = parse_message(client_io)
       message.command.should eq("CONNECTED")
       message["receipt-id"].should be_nil
@@ -84,10 +111,10 @@ describe Stompede::Base do
       message["session"].should match(/\A[a-f0-9\-]{36}\z/)
     end
 
-    it "replies with an ERROR frame when the handler fails", error: :on_connect do
+    it "replies with an ERROR frame when the handler fails", error: :connect do
       send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
-      client_io.should receive_error(TestApp::MooError, "MOOOO!")
-      expect { app_monitor.wait_for_crash! }.to raise_error(TestApp::MooError, "MOOOO!")
+      client_io.should receive_error(MooError, "MOOOO!")
+      expect { app_monitor.wait_for_crash! }.to raise_error(MooError, "MOOOO!")
     end
 
     it "sends a client error when client does not support STOMP version #{Stompede::STOMP_VERSION}" do
@@ -100,10 +127,10 @@ describe Stompede::Base do
 
     it "crashes when the client sends multiple CONNECT frames"
 
-    context "with detached frame", detach: :on_connect do
+    context "with detached frame", detach: :connect do
       it "does not send a CONNECTED frame when the client sends a CONNECT" do
         send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
-        latch.receive(:on_connect)
+        latch.receive(:connect)
 
         client_io.should be_an_empty_socket
         app.should be_alive
@@ -111,7 +138,7 @@ describe Stompede::Base do
 
       it "sends a CONNECTED frame when processing is finished" do
         send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
-        frame = latch.receive(:on_connect).last
+        frame = latch.receive(:connect).last
 
         client_io.should be_an_empty_socket
         frame.receipt!(foo: "bar")
@@ -123,7 +150,7 @@ describe Stompede::Base do
 
       it "sends an ERROR frame and closes connection when processing fails" do
         send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
-        frame = latch.receive(:on_connect).last
+        frame = latch.receive(:connect).last
 
         client_io.should be_an_empty_socket
         frame.error!(RuntimeError.new("it died"), foo: "bar")
@@ -149,7 +176,7 @@ describe Stompede::Base do
       send_message(client_io, command, headers.merge("receipt" => "1234"))
       latch.receive(callback)
 
-      client_io.should receive_error(TestApp::MooError, "MOOOO!", "receipt-id" => "1234")
+      client_io.should receive_error(MooError, "MOOOO!", "receipt-id" => "1234")
     end
 
     context "with detached frame", detach: callback do
@@ -164,7 +191,7 @@ describe Stompede::Base do
       it "does not include the receipt in the error when app throws an error", error: callback do
         send_message(client_io, command, headers.merge("receipt" => "1234"))
         latch.receive(callback)
-        client_io.should receive_error(TestApp::MooError, "MOOOO!", "receipt-id" => nil)
+        client_io.should receive_error(MooError, "MOOOO!", "receipt-id" => nil)
       end
 
       it "sends a receipt when processing is finished" do
@@ -214,23 +241,23 @@ describe Stompede::Base do
     it "is called when a client sends a DISCONNECT frame" do
       send_message(client_io, "DISCONNECT", "foo" => "Bar")
 
-      frame = latch.receive(:on_disconnect).first
+      frame = latch.receive(:disconnect).first
       frame["foo"].should eq("Bar")
 
       app.should be_alive
       server_io.should_not be_closed
     end
 
-    it_behaves_like "a callback with receipts", "DISCONNECT", :on_disconnect
+    it_behaves_like "a callback with receipts", "DISCONNECT", :disconnect
 
     it "is not called when a socket is closed" do
       client_io.close
-      latch.invocations_until(:on_close).should_not include(:on_disconnect)
+      latch.invocations_until(:close).should_not include(:disconnect)
     end
 
-    it "is not called when app throws an error", error: :on_open do
-      latch.invocations_until(:on_close).should_not include(:on_disconnect)
-      client_io.should receive_error(TestApp::MooError, "MOOOO!")
+    it "is not called when app throws an error", error: :open do
+      latch.invocations_until(:close).should_not include(:disconnect)
+      client_io.should receive_error(MooError, "MOOOO!")
     end
 
     it "crashes when the client sends further frames after the disconnect frame"
@@ -240,7 +267,7 @@ describe Stompede::Base do
     it "is called when a client sends a SEND frame" do
       send_message(client_io, "SEND", "Hello", "destination" => "/foo/bar", "foo" => "Bar")
 
-      frame = latch.receive(:on_send).first
+      frame = latch.receive(:send).first
       frame["foo"].should eq("Bar")
       frame.destination.should eq("/foo/bar")
 
@@ -248,11 +275,11 @@ describe Stompede::Base do
       server_io.should_not be_closed
     end
 
-    it_behaves_like "a callback with receipts", "SEND", :on_send
+    it_behaves_like "a callback with receipts", "SEND", :send
 
-    it "closes socket when it throws an error", error: :on_send do
+    it "closes socket when it throws an error", error: :send do
       send_message(client_io, "SEND", "Hello", "destination" => "/foo/bar", "foo" => "Bar")
-      client_io.should receive_error(TestApp::MooError, "MOOOO!")
+      client_io.should receive_error(MooError, "MOOOO!")
     end
   end
 
@@ -260,7 +287,7 @@ describe Stompede::Base do
     it "is called when a client sends a SUBSCRIBE frame" do
       send_message(client_io, "SUBSCRIBE", "destination" => "/foo/bar", "id" => "1", "foo" => "Bar")
 
-      subscription, frame = latch.receive(:on_subscribe)
+      subscription, frame = latch.receive(:subscribe)
       frame["foo"].should eq("Bar")
       frame.destination.should eq("/foo/bar")
 
@@ -268,17 +295,17 @@ describe Stompede::Base do
       server_io.should_not be_closed
     end
 
-    it_behaves_like "a callback with receipts", "SUBSCRIBE", :on_subscribe, id: "1", destination: "/foo/bar"
+    it_behaves_like "a callback with receipts", "SUBSCRIBE", :subscribe, id: "1", destination: "/foo/bar"
 
-    it "closes socket when it throws an error", error: :on_subscribe do
+    it "closes socket when it throws an error", error: :subscribe do
       send_message(client_io, "SUBSCRIBE", "destination" => "/foo/bar", "id" => "1", "foo" => "Bar")
-      client_io.should receive_error(TestApp::MooError, "MOOOO!")
+      client_io.should receive_error(MooError, "MOOOO!")
     end
 
     it "replies with an error if subscription does not include a destination" do
       send_message(client_io, "SUBSCRIBE", "id" => "1")
 
-      latch.invocations_until(:on_close).should eq([:on_open, :on_close])
+      latch.invocations_until(:close).should eq([:open, :close])
 
       client_io.should receive_error(Stompede::ClientError, "subscription does not include a destination")
       app_monitor.wait_for_terminate
@@ -287,7 +314,7 @@ describe Stompede::Base do
     it "replies with an error if subscription does not include an id" do
       send_message(client_io, "SUBSCRIBE", "destination" => "1")
 
-      latch.invocations_until(:on_close).should eq([:on_open, :on_close])
+      latch.invocations_until(:close).should eq([:open, :close])
 
       client_io.should receive_error(Stompede::ClientError, "subscription does not include an id")
       app_monitor.wait_for_terminate
@@ -297,7 +324,7 @@ describe Stompede::Base do
       send_message(client_io, "SUBSCRIBE", "destination" => "1", "id" => "1")
       send_message(client_io, "SUBSCRIBE", "destination" => "2", "id" => "1")
 
-      latch.invocations_until(:on_close).should eq([:on_open, :on_subscribe, :on_unsubscribe, :on_close])
+      latch.invocations_until(:close).should eq([:open, :subscribe, :unsubscribe, :close])
 
       client_io.should receive_error(Stompede::ClientError, "subscription with id \"1\" already exists")
       app_monitor.wait_for_terminate
@@ -312,8 +339,8 @@ describe Stompede::Base do
     it "is called when a client sends an unsubscribe frame with the previous Subscription" do
       send_message(client_io, "UNSUBSCRIBE", "id" => "1", "foo" => "Bar")
 
-      subscribe_subscription, _ = latch.receive(:on_subscribe)
-      unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
+      subscribe_subscription, _ = latch.receive(:subscribe)
+      unsubscribe_subscription, frame = latch.receive(:unsubscribe)
 
       frame["foo"].should eq("Bar")
       unsubscribe_subscription.id.should eq("1")
@@ -323,12 +350,12 @@ describe Stompede::Base do
       server_io.should_not be_closed
     end
 
-    it_behaves_like "a callback with receipts", "UNSUBSCRIBE", :on_unsubscribe, id: "1"
+    it_behaves_like "a callback with receipts", "UNSUBSCRIBE", :unsubscribe, id: "1"
 
-    it "closes socket when it throws an error", error: :on_unsubscribe do
+    it "closes socket when it throws an error", error: :unsubscribe do
       send_message(client_io, "UNSUBSCRIBE", "id" => "1")
 
-      client_io.should receive_error(TestApp::MooError, "MOOOO!")
+      client_io.should receive_error(MooError, "MOOOO!")
     end
 
     it "replies with an error if subscription does not include an id" do
@@ -354,9 +381,9 @@ describe Stompede::Base do
     end
 
     it "is called if the session has a subscription and the socket is closed" do
-      subscribe_subscription, _ = latch.receive(:on_subscribe)
+      subscribe_subscription, _ = latch.receive(:subscribe)
       client_io.close
-      unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
+      unsubscribe_subscription, frame = latch.receive(:unsubscribe)
 
       frame.should be_nil
       unsubscribe_subscription.id.should eq("1")
@@ -365,27 +392,27 @@ describe Stompede::Base do
       app_monitor.wait_for_terminate
     end
 
-    it "is called if the session has a subscription and the app dies", error: :on_send do
-      subscribe_subscription, _ = latch.receive(:on_subscribe)
+    it "is called if the session has a subscription and the app dies", error: :send do
+      subscribe_subscription, _ = latch.receive(:subscribe)
       send_message(client_io, "SEND")
-      unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
+      unsubscribe_subscription, frame = latch.receive(:unsubscribe)
 
       frame.should be_nil
       unsubscribe_subscription.id.should eq("1")
       unsubscribe_subscription.should eql(subscribe_subscription)
 
-      client_io.should receive_error(TestApp::MooError, "MOOOO!")
+      client_io.should receive_error(MooError, "MOOOO!")
     end
 
-    it "is called if subscription raises an error", error: :on_subscribe do
-      subscribe_subscription, _ = latch.receive(:on_subscribe)
-      unsubscribe_subscription, frame = latch.receive(:on_unsubscribe)
+    it "is called if subscription raises an error", error: :subscribe do
+      subscribe_subscription, _ = latch.receive(:subscribe)
+      unsubscribe_subscription, frame = latch.receive(:unsubscribe)
 
       frame.should be_nil
       unsubscribe_subscription.id.should eq("1")
       unsubscribe_subscription.should eql(subscribe_subscription)
 
-      client_io.should receive_error(TestApp::MooError, "MOOOO!")
+      client_io.should receive_error(MooError, "MOOOO!")
     end
   end
 
@@ -394,7 +421,7 @@ describe Stompede::Base do
       send_message(client_io, "SUBSCRIBE", "id" => "1234", "destination" => "/foo", "ack" => example.metadata[:ack])
     end
 
-    let(:subscription) { latch.receive(:on_subscribe).first }
+    let(:subscription) { latch.receive(:subscribe).first }
 
     describe "#message" do
       it "sends a message to the client" do
