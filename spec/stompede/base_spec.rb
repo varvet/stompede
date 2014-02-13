@@ -423,7 +423,18 @@ describe Stompede::Base do
       end
 
       context "with ack mode set to 'client-individual'", ack: "client-individual" do
-        it "blocks until the client sends an ACK frame"
+        pending "blocks until the client sends an ACK frame" do
+          future = Celluloid::Future.new { subscription.message("What üp?", "foo" => "Bar") }
+
+          message = parse_message(client_io)
+          future.should_not be_ready
+          send_message(client_io, "ACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+
+          ack_frame = future.value
+          ack_frame.command.should eq(:ack)
+          ack_frame["foo"].should eq("bar")
+        end
+
         it "does not acknowledge previous frames"
         it "blocks until the clients sends a NACK frame"
         it "raises an error if the client has disconnected"
@@ -432,6 +443,7 @@ describe Stompede::Base do
       context "with ack mode set to 'client'", ack: "client" do
         it "blocks until the client sends an ACK frame"
         it "acknowledges previous frames"
+        it "does not acknowledge frames sent to another subscription"
         it "blocks until the clients sends a NACK frame"
         it "raises an error if the client has disconnected"
       end
@@ -452,6 +464,7 @@ describe Stompede::Base do
       context "with ack mode set to 'client'", ack: "client" do
         it "blocks until the client sends an ACK frame"
         it "acknowledges previous frames"
+        it "does not acknowledge frames sent to another subscription"
         it "raises an error if the client sends a NACK frame"
         it "raises an error if the client has disconnected"
       end
