@@ -21,6 +21,7 @@ module Stompede
     def initialize(app_klass)
       @dispatcher = Dispatcher.new_link
       @sockets = {}
+      @ack_queue = {}
       @app_klass = app_klass
       @wait_for_ack = {}
     end
@@ -88,13 +89,27 @@ module Stompede
       condition.signal(frame) if condition
     end
 
-    def write_and_wait_for_ack(session, message, timeout)
+    def write_and_wait_for_ack(session, subscription, message, timeout)
       id = message["ack"]
-      @wait_for_ack[id] = Condition.new
+      condition = Condition.new
+      @wait_for_ack[id] = condition
+      if subscription.ack_mode == :cumulative
+        @ack_queue[subscription.id] ||= []
+        @ack_queue[subscription.id] << condition
+      end
       # FIXME: there's a race condition in that if `write` pipelines, we might
       # receive a signal on the Condition before we've called `wait.
       write(session, message)
-      @wait_for_ack[id].wait(timeout)
+      ack = condition.wait(timeout)
+      if subscription.ack_mode == :cumulative
+        index = @ack_queue[subscription.id].index(condition)
+        if index
+          @ack_queue[subscription.id].slice!(0..index).each do |condition|
+            condition.signal(ack)
+          end
+        end
+      end
+      ack
     rescue => e
       abort e
     ensure

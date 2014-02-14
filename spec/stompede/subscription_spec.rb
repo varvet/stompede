@@ -87,11 +87,56 @@ describe Stompede::Subscription do
     end
 
     context "with ack mode set to 'client'", ack: "client" do
-      it "blocks until the client sends an ACK frame"
-      it "acknowledges previous frames"
-      it "does not acknowledge frames sent to another subscription"
-      it "blocks until the clients sends a NACK frame"
-      it "raises an error if the client has disconnected"
+      it "blocks until the client sends an ACK frame" do
+        future = Celluloid::Future.new { subscription.message("What üp?", "foo" => "Bar") }
+
+        message = parse_message(client_io)
+        future.should_not be_ready
+        send_message(client_io, "ACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+
+        ack_frame = future.value
+        ack_frame.command.should eq(:ack)
+        ack_frame["foo"].should eq("bar")
+      end
+
+      it "times out" do
+        expect do
+          subscription.message("What üp?", "foo" => "Bar", timeout: 0.01)
+        end.to raise_error(Celluloid::ConditionError)
+        connector.should_not be_waiting_for_ack
+      end
+
+      it "acknowledges previous frames" do
+        future_one = Celluloid::Future.new { subscription.message("Hey", "foo" => "Bar") }
+        future_two = Celluloid::Future.new { subscription.message("Ho", "foo" => "Bar") }
+
+        message_one = parse_message(client_io)
+        message_two = parse_message(client_io)
+
+        send_message(client_io, "ACK\nid:#{message_two["ack"]}\nfoo:bar\n\n\0")
+
+        future_one.value["id"].should eq(message_two["ack"])
+        future_two.value["id"].should eq(message_two["ack"])
+      end
+
+      it "blocks until the clients sends a NACK frame" do
+        future = Celluloid::Future.new { subscription.message("What üp?", "foo" => "Bar") }
+
+        message = parse_message(client_io)
+        future.should_not be_ready
+        send_message(client_io, "NACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+
+        ack_frame = future.value
+        ack_frame.command.should eq(:nack)
+        ack_frame["foo"].should eq("bar")
+      end
+
+      it "raises an error if the client has disconnected" do
+        client_io.close
+        expect do
+          subscription.message("What üp?", "foo" => "Bar")
+        end.to raise_error(Stompede::Disconnected)
+      end
     end
   end
 
