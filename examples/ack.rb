@@ -1,27 +1,29 @@
 require "stompede"
+require "set"
 
 class MyApp < Stompede::Base
-  def initialize
-    @subscriptions = []
+  def initialize(session)
+    super
+    @subscriptions = Set.new
   end
 
-  def on_subscribe(subscription)
-    reply = subscription.message("Hello")
-
+  def on_subscribe(subscription, frame)
+    puts "on_subscribe"
     @subscriptions.add(subscription)
+    reply = subscription.message("Hello")
+    puts "received ack for on_unsubscribe #{reply.inspect}"
   end
 
-  def on_unsubscribe(subscription)
+  def on_unsubscribe(subscription, frame)
     @subscriptions.delete(subscription)
   end
 
   def on_send(frame)
-    puts "sending message"
-    ack = @subscriptions.each do |subscription|
+    puts "on_send"
+    acks = @subscriptions.map do |subscription|
       subscription.message("hello")
     end
-    puts "sent!"
-    p ack
+    puts "received acks for on_send #{acks.inspect}"
   end
 end
 
