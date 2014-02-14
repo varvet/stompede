@@ -1,5 +1,7 @@
 module Stompede
   class Session
+    attr_reader :connector
+
     def initialize(connector)
       @connector = connector
       @subscriptions = {}

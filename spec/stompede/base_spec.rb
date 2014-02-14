@@ -25,6 +25,7 @@ describe Stompede::Base do
         @detach = Array(spec.example.metadata[:detach])
         spec.app_monitor.observe(Celluloid::Actor.current)
         spec.app = Celluloid::Actor.current
+        spec.latch.push([:initialize])
       end
 
       define_method(:dispatch) do |command, *args|
@@ -39,6 +40,7 @@ describe Stompede::Base do
 
   before do
     connector.async.connect(server_io)
+    latch.receive(:initialize)
   end
 
   after do
@@ -421,7 +423,7 @@ describe Stompede::Base do
       send_message(client_io, "SUBSCRIBE", "id" => "1234", "destination" => "/foo", "ack" => example.metadata[:ack])
     end
 
-    let(:subscription) { latch.receive(:subscribe).first }
+    let!(:subscription) { latch.receive(:subscribe).first }
 
     describe "#message" do
       it "sends a message to the client" do
@@ -450,7 +452,7 @@ describe Stompede::Base do
       end
 
       context "with ack mode set to 'client-individual'", ack: "client-individual" do
-        pending "blocks until the client sends an ACK frame" do
+        it "blocks until the client sends an ACK frame" do
           future = Celluloid::Future.new { subscription.message("What üp?", "foo" => "Bar") }
 
           message = parse_message(client_io)
