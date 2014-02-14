@@ -16,6 +16,8 @@ module Stompede
 
     def write_and_wait_for_ack(message, timeout)
       @connector.write_and_wait_for_ack(self, message, timeout)
+    rescue Celluloid::AbortError => e
+      raise e.cause
     end
 
     def error(exception, headers = {})

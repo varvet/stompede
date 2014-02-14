@@ -78,7 +78,12 @@ describe Stompede::Subscription do
         ack_frame["foo"].should eq("bar")
       end
 
-      it "raises an error if the client has disconnected"
+      it "raises an error if the client has disconnected" do
+        client_io.close
+        expect do
+          subscription.message("What üp?", "foo" => "Bar")
+        end.to raise_error(Stompede::Disconnected)
+      end
     end
 
     context "with ack mode set to 'client'", ack: "client" do
