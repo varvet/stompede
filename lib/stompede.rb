@@ -20,14 +20,14 @@ module Stompede
 
   class TCPServer
     def initialize(app_klass)
-      @app_klass = app_klass
+      @connector = Connector.new(app_klass)
     end
 
     def listen(*args)
       server = ::TCPServer.new(*args)
       loop do
         socket = server.accept
-        @app_klass.new(Celluloid::IO::TCPSocket.new(socket))
+        @connector.async.connect(Celluloid::IO::TCPSocket.new(socket))
       end
     end
   end
