@@ -91,6 +91,8 @@ module Stompede
     def write_and_wait_for_ack(session, message, timeout)
       id = message["ack"]
       @wait_for_ack[id] = Condition.new
+      # FIXME: there's a race condition in that if `write` pipelines, we might
+      # receive a signal on the Condition before we've called `wait.
       write(session, message)
       @wait_for_ack[id].wait(timeout)
     rescue => e
