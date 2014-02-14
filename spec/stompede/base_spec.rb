@@ -3,49 +3,7 @@
 class MooError < StandardError; end
 
 describe Stompede::Base do
-  attr_accessor :app
-  # There is no TCPSocket.pair :(
-  let(:sockets) do
-    server = TCPServer.new("127.0.0.1", 0)
-    client = Thread.new { TCPSocket.new("127.0.0.1", server.addr[1]) }
-    [server.accept, client.value]
-  end
-
-  let(:client_io) { sockets[0] }
-  let(:server_io) { Celluloid::IO::TCPSocket.new(sockets[1]) }
-
-  let(:app_monitor) { CrashMonitor.new }
-  let(:app_klass) do
-    spec = self
-
-    Class.new(Stompede::Base) do
-      define_method(:initialize) do |session|
-        @session = session
-        @error = Array(spec.example.metadata[:error])
-        @detach = Array(spec.example.metadata[:detach])
-        spec.app_monitor.observe(Celluloid::Actor.current)
-        spec.app = Celluloid::Actor.current
-        spec.latch.push([:initialize])
-      end
-
-      define_method(:dispatch) do |command, *args|
-        args.last.detach! if @detach.include?(command)
-        spec.latch.push([command, *args])
-        raise MooError, "MOOOO!" if @error.include?(command)
-      end
-    end
-  end
-
-  let(:connector) { Stompede::Connector.new(app_klass) }
-
-  before do
-    connector.async.connect(server_io)
-    latch.receive(:initialize)
-  end
-
-  after do
-    connector.should be_alive
-  end
+  integration_test
 
   describe "generic client errors" do
     it "terminates the connection on parser errors" do
