@@ -66,7 +66,18 @@ describe Stompede::Subscription do
         future_one.should_not be_ready
       end
 
-      it "blocks until the clients sends a NACK frame"
+      it "blocks until the clients sends a NACK frame" do
+        future = Celluloid::Future.new { subscription.message("What üp?", "foo" => "Bar") }
+
+        message = parse_message(client_io)
+        future.should_not be_ready
+        send_message(client_io, "NACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+
+        ack_frame = future.value
+        ack_frame.command.should eq(:nack)
+        ack_frame["foo"].should eq("bar")
+      end
+
       it "raises an error if the client has disconnected"
     end
 

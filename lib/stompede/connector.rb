@@ -54,7 +54,7 @@ module Stompede
         begin
           parser.parse(chunk) do |frame|
             stompede_frame = Frame.new(session, frame.command, frame.headers, frame.body)
-            if stompede_frame.command == :ack
+            if stompede_frame.command == :ack or stompede_frame.command == :nack
               respond_to_ack(stompede_frame)
             else
               @dispatcher.async.dispatch(session, app, stompede_frame)
