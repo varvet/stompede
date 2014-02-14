@@ -88,14 +88,20 @@ module Stompede
       condition.signal(frame) if condition
     end
 
-    def wait_for_ack(message, timeout)
-      condition = Condition.new
-      @wait_for_ack[message["ack"]] = condition
-      condition.wait(timeout)
+    def write_and_wait_for_ack(session, message, timeout)
+      id = message["ack"]
+      @wait_for_ack[id] = Condition.new
+      write(session, message)
+      @wait_for_ack[id].wait(timeout)
     rescue => e
       abort e
     ensure
-      @wait_for_ack.delete(message["ack"])
+      @wait_for_ack.delete(id)
+    end
+
+    # mostly useful for tests
+    def waiting_for_ack?
+      not @wait_for_ack.empty?
     end
 
     def close(session)

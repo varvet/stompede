@@ -34,8 +34,7 @@ module Stompede
       else
         headers["ack"] = headers["message-id"]
         message = StompParser::Frame.new("MESSAGE", headers, body)
-        @session.write(message)
-        @session.connector.wait_for_ack(message, timeout)
+        @session.write_and_wait_for_ack(message, timeout)
       end
     end
   end

@@ -464,6 +464,13 @@ describe Stompede::Base do
           ack_frame["foo"].should eq("bar")
         end
 
+        it "times out" do
+          expect do
+            subscription.message("What üp?", "foo" => "Bar", timeout: 0.01)
+          end.to raise_error(Celluloid::ConditionError)
+          connector.should_not be_waiting_for_ack
+        end
+
         it "does not acknowledge previous frames"
         it "blocks until the clients sends a NACK frame"
         it "raises an error if the client has disconnected"

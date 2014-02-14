@@ -1,7 +1,5 @@
 module Stompede
   class Session
-    attr_reader :connector
-
     def initialize(connector)
       @connector = connector
       @subscriptions = {}
@@ -14,6 +12,10 @@ module Stompede
 
     def write(value)
       @connector.write(self, value.to_str)
+    end
+
+    def write_and_wait_for_ack(message, timeout)
+      @connector.write_and_wait_for_ack(self, message, timeout)
     end
 
     def error(exception, headers = {})
