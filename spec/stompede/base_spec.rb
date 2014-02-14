@@ -471,7 +471,19 @@ describe Stompede::Base do
           connector.should_not be_waiting_for_ack
         end
 
-        it "does not acknowledge previous frames"
+        it "does not acknowledge previous frames" do
+          future_one = Celluloid::Future.new { subscription.message("Hey", "foo" => "Bar") }
+          future_two = Celluloid::Future.new { subscription.message("Ho", "foo" => "Bar") }
+
+          message_one = parse_message(client_io)
+          message_two = parse_message(client_io)
+
+          send_message(client_io, "ACK\nid:#{message_two["ack"]}\nfoo:bar\n\n\0")
+
+          future_two.value["id"].should eq(message_two["ack"])
+          future_one.should_not be_ready
+        end
+
         it "blocks until the clients sends a NACK frame"
         it "raises an error if the client has disconnected"
       end
