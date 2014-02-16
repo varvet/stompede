@@ -6,8 +6,6 @@ require "delegate"
 require "securerandom"
 
 require "stompede/version"
-require "stompede/error"
-
 require "stompede/base"
 require "stompede/connector"
 require "stompede/frame"
@@ -17,6 +15,11 @@ require "stompede/subscription"
 
 module Stompede
   STOMP_VERSION = "1.2" # version of the STOMP protocol we support
+
+  class Nack < StandardError; end
+  class Error < StandardError; end
+  class ClientError < Error; end
+  class Disconnected < Error; end
 
   class TCPServer
     def initialize(app_klass)
