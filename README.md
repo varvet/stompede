@@ -14,10 +14,10 @@ reducing the number of open socket connections.
 
 ### Usage
 
-Stompede apps are written by inheriting from `Stompede::Base`:
+Stompede apps are written by inheriting from `Stompede::Stomplet`:
 
 ``` ruby
-class MyApp < Stompede::Base
+class MyApp < Stompede::Stomplet
   def on_open
   end
 
@@ -68,7 +68,7 @@ with the frames, for example for authentication.
 in order to send message to the client. For example:
 
 ``` ruby
-class MyApp < Stompede::Base
+class MyApp < Stompede::Stomplet
   def on_subscribe(subscription, frame)
     @pinger = every(1) do
       subscription.message("PONG", pong: "yes")
@@ -114,7 +114,7 @@ receipt is sent. For example, you might want to perform some processing
 asynchronously:
 
 ``` ruby
-class MyApp < Stompede::Base
+class MyApp < Stompede::Stomplet
   class Worker
     include Celluloid
 

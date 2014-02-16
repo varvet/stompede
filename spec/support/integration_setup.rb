@@ -16,7 +16,7 @@ module IntegrationSetup
       let(:app_klass) do
         spec = self
 
-        Class.new(Stompede::Base) do
+        Class.new(Stompede::Stomplet) do
           define_method(:initialize) do |session|
             @session = session
             @error = Array(spec.example.metadata[:error])

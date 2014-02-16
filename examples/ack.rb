@@ -1,7 +1,7 @@
 require "stompede"
 require "set"
 
-class MyApp < Stompede::Base
+class MyApp < Stompede::Stomplet
   def initialize(session)
     super
     @subscriptions = Set.new

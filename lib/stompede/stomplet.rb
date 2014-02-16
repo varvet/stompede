@@ -1,5 +1,5 @@
 module Stompede
-  class Base
+  class Stomplet
     include Celluloid
 
     finalizer :cleanup

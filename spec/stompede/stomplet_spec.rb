@@ -2,7 +2,7 @@
 
 class MooError < StandardError; end
 
-describe Stompede::Base do
+describe Stompede::Stomplet do
   integration_test
 
   describe "generic client errors" do

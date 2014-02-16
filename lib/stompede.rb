@@ -6,7 +6,7 @@ require "delegate"
 require "securerandom"
 
 require "stompede/version"
-require "stompede/base"
+require "stompede/stomplet"
 require "stompede/connector"
 require "stompede/frame"
 require "stompede/error_frame"
