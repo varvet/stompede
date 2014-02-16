@@ -30,12 +30,18 @@ module Stompede
         "message-id" => SecureRandom.uuid
       }
       if ack_mode == :auto
-        @session.safe_write(StompParser::Frame.new("MESSAGE", headers, body))
+        @session.write(StompParser::Frame.new("MESSAGE", headers, body))
+        nil
       else
         headers["ack"] = headers["message-id"]
         message = StompParser::Frame.new("MESSAGE", headers, body)
         @session.write_and_wait_for_ack(self, message, timeout)
       end
+    end
+
+    def message!(body, headers = {})
+      response = message(body, headers)
+      raise Nack, "client did not acknowledge message" if response and response.command == :nack
     end
   end
 end
