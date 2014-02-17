@@ -85,7 +85,7 @@ describe Stompede::Stomplet do
 
     it "crashes when the client sends another frame before the CONNECT frame" do
       send_message(client_io, "SEND")
-      client_io.should receive_error(Stompede::ClientError, "first frame must be a CONNECT or STOMP frame")
+      client_io.should receive_error(Stompede::ClientError, "client is not connected")
     end
 
     it "crashes when the client sends multiple CONNECT frames" do
@@ -231,7 +231,17 @@ describe Stompede::Stomplet do
       client_io.should receive_error(MooError, "MOOOO!")
     end
 
-    it "crashes when the client sends further frames after the disconnect frame"
+    it "crashes when the client sends further frames after the disconnect frame" do
+      send_message(client_io, "DISCONNECT", "foo" => "Bar")
+      send_message(client_io, "SEND", "destination" => "bar")
+      client_io.should receive_error(Stompede::ClientError, "client is not connected")
+    end
+
+    it "crashes when the client sends multiple disconnect frames" do
+      send_message(client_io, "DISCONNECT", "foo" => "Bar")
+      send_message(client_io, "DISCONNECT", "foo" => "Bar")
+      client_io.should receive_error(Stompede::ClientError, "client is not connected")
+    end
   end
 
   describe "#on_send" do

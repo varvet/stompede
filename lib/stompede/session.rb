@@ -1,6 +1,6 @@
 module Stompede
   class Session
-    attr_accessor :connected
+    attr_accessor :connected, :disconnected
 
     def initialize(connector)
       @connector = connector

@@ -14,7 +14,9 @@ module Stompede
         elsif frame.command == :connect
           raise ClientError, "must not send CONNECT or STOMP frame after connection is already open"
         elsif not session.connected
-          raise ClientError, "first frame must be a CONNECT or STOMP frame"
+          raise ClientError, "client is not connected"
+        elsif frame.command == :disconnect
+          session.connected = false
         end
 
         case frame.command
