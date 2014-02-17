@@ -33,9 +33,6 @@ module Stompede
 
     def dispatch(command, *args)
       public_send(:"on_#{command}", *args)
-    rescue ClientError => e
-      session.error(e)
-      terminate
     rescue Disconnect => e
       terminate
     end
