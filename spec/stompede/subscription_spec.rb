@@ -1,5 +1,6 @@
 describe Stompede::Subscription do
-  integration_test
+  integration_test!
+  connect!
 
   before do
     send_message(client_io, "SUBSCRIBE", "id" => "1234", "destination" => "/foo", "ack" => example.metadata[:ack])

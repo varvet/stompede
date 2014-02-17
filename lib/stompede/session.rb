@@ -1,5 +1,7 @@
 module Stompede
   class Session
+    attr_accessor :connected
+
     def initialize(connector)
       @connector = connector
       @subscriptions = {}

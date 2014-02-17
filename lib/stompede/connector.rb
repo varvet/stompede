@@ -7,9 +7,34 @@ module Stompede
       include Celluloid
 
       def dispatch(session, app, frame)
-        app.raw_dispatch(frame)
+        frame.validate!
+
+        if frame.command == :connect and not session.connected
+          session.connected = true
+        elsif frame.command == :connect
+          raise ClientError, "must not send CONNECT or STOMP frame after connection is already open"
+        elsif not session.connected
+          raise ClientError, "first frame must be a CONNECT or STOMP frame"
+        end
+
+        case frame.command
+        when :connect, :disconnect, :send
+          app.dispatch(frame.command, frame)
+        when :subscribe
+          subscription = session.subscribe(frame)
+          app.dispatch(:subscribe, subscription, frame)
+        when :unsubscribe
+          subscription = session.unsubscribe(frame)
+          app.dispatch(:unsubscribe, subscription, frame)
+        end
+
+        frame.receipt unless frame.detached?
       rescue => e
-        session.error(e)
+        if frame.detached?
+          session.error(e)
+        else
+          frame.error(e)
+        end
       end
     end
 

@@ -33,35 +33,11 @@ module Stompede
 
     def dispatch(command, *args)
       public_send(:"on_#{command}", *args)
-    end
-
-    def raw_dispatch(frame)
-      frame.validate!
-
-      case frame.command
-      when :connect, :disconnect, :send
-        dispatch(frame.command, frame)
-      when :subscribe
-        subscription = session.subscribe(frame)
-        dispatch(:subscribe, subscription, frame)
-      when :unsubscribe
-        subscription = session.unsubscribe(frame)
-        dispatch(:unsubscribe, subscription, frame)
-      end
-
-      frame.receipt unless frame.detached?
-    rescue => e
-      if frame.detached?
-        session.error(e)
-      else
-        frame.error(e)
-      end
-
-      if e.is_a?(ClientError) or e.is_a?(Disconnected)
-        terminate
-      else
-        raise e
-      end
+    rescue ClientError => e
+      session.error(e)
+      terminate
+    rescue Disconnect => e
+      terminate
     end
 
     def cleanup

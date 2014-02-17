@@ -1,5 +1,5 @@
 module IntegrationSetup
-  def integration_test
+  def integration_test!
     instance_eval do
       attr_accessor :app
       # There is no TCPSocket.pair :(
@@ -44,6 +44,13 @@ module IntegrationSetup
       after do
         connector.should be_alive
       end
+    end
+  end
+
+  def connect!
+    before do
+      send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
+      parse_message(client_io).command.should eq("CONNECTED")
     end
   end
 end

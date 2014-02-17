@@ -3,7 +3,7 @@
 class MooError < StandardError; end
 
 describe Stompede::Stomplet do
-  integration_test
+  integration_test!
 
   describe "generic client errors" do
     it "terminates the connection on parser errors" do
@@ -83,9 +83,17 @@ describe Stompede::Stomplet do
       app_monitor.wait_for_terminate
     end
 
-    it "crashes when the client sends another frame before the CONNECT frame"
+    it "crashes when the client sends another frame before the CONNECT frame" do
+      send_message(client_io, "SEND")
+      client_io.should receive_error(Stompede::ClientError, "first frame must be a CONNECT or STOMP frame")
+    end
 
-    it "crashes when the client sends multiple CONNECT frames"
+    it "crashes when the client sends multiple CONNECT frames" do
+      send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
+      parse_message(client_io).command.should eq("CONNECTED")
+      send_message(client_io, "STOMP", "accept-version" => Stompede::STOMP_VERSION)
+      client_io.should receive_error(Stompede::ClientError, "must not send CONNECT or STOMP frame after connection is already open")
+    end
 
     context "with detached frame", detach: :connect do
       it "does not send a CONNECTED frame when the client sends a CONNECT" do
@@ -198,6 +206,8 @@ describe Stompede::Stomplet do
   end
 
   describe "#on_disconnect" do
+    connect!
+
     it "is called when a client sends a DISCONNECT frame" do
       send_message(client_io, "DISCONNECT", "foo" => "Bar")
 
@@ -215,7 +225,8 @@ describe Stompede::Stomplet do
       latch.invocations_until(:close).should_not include(:disconnect)
     end
 
-    it "is not called when app throws an error", error: :open do
+    it "is not called when app throws an error", error: :send do
+      send_message(client_io, "SEND", "destination" => "bar")
       latch.invocations_until(:close).should_not include(:disconnect)
       client_io.should receive_error(MooError, "MOOOO!")
     end
@@ -224,6 +235,8 @@ describe Stompede::Stomplet do
   end
 
   describe "#on_send" do
+    connect!
+
     it "is called when a client sends a SEND frame" do
       send_message(client_io, "SEND", "Hello", "destination" => "/foo/bar", "foo" => "Bar")
 
@@ -244,6 +257,8 @@ describe Stompede::Stomplet do
   end
 
   describe "#on_subscribe" do
+    connect!
+
     it "is called when a client sends a SUBSCRIBE frame" do
       send_message(client_io, "SUBSCRIBE", "destination" => "/foo/bar", "id" => "1", "foo" => "Bar")
 
@@ -265,7 +280,7 @@ describe Stompede::Stomplet do
     it "replies with an error if subscription does not include a destination" do
       send_message(client_io, "SUBSCRIBE", "id" => "1")
 
-      latch.invocations_until(:close).should eq([:open, :close])
+      latch.invocations_until(:close).should eq([:open, :connect, :close])
 
       client_io.should receive_error(Stompede::ClientError, "subscription does not include a destination")
       app_monitor.wait_for_terminate
@@ -274,7 +289,7 @@ describe Stompede::Stomplet do
     it "replies with an error if subscription does not include an id" do
       send_message(client_io, "SUBSCRIBE", "destination" => "1")
 
-      latch.invocations_until(:close).should eq([:open, :close])
+      latch.invocations_until(:close).should eq([:open, :connect, :close])
 
       client_io.should receive_error(Stompede::ClientError, "subscription does not include an id")
       app_monitor.wait_for_terminate
@@ -284,7 +299,7 @@ describe Stompede::Stomplet do
       send_message(client_io, "SUBSCRIBE", "destination" => "1", "id" => "1")
       send_message(client_io, "SUBSCRIBE", "destination" => "2", "id" => "1")
 
-      latch.invocations_until(:close).should eq([:open, :subscribe, :unsubscribe, :close])
+      latch.invocations_until(:close).should eq([:open, :connect, :subscribe, :unsubscribe, :close])
 
       client_io.should receive_error(Stompede::ClientError, "subscription with id \"1\" already exists")
       app_monitor.wait_for_terminate
@@ -292,6 +307,8 @@ describe Stompede::Stomplet do
   end
 
   describe "#on_unsubscribe" do
+    connect!
+
     before do
       send_message(client_io, "SUBSCRIBE", "id" => "1", "destination" => "/foo")
     end
