@@ -84,7 +84,7 @@ describe Stompede::Stomplet do
     end
 
     it "crashes when the client sends another frame before the CONNECT frame" do
-      send_message(client_io, "SEND")
+      send_message(client_io, "SEND", destination: "foo")
       client_io.should receive_error(Stompede::ClientError, "client is not connected")
     end
 
@@ -258,11 +258,16 @@ describe Stompede::Stomplet do
       server_io.should_not be_closed
     end
 
-    it_behaves_like "a callback with receipts", "SEND", :send
+    it_behaves_like "a callback with receipts", "SEND", :send, destination: "foo"
 
     it "closes socket when it throws an error", error: :send do
       send_message(client_io, "SEND", "Hello", "destination" => "/foo/bar", "foo" => "Bar")
       client_io.should receive_error(MooError, "MOOOO!")
+    end
+
+    it "replies with an error if subscription does not include a destination" do
+      send_message(client_io, "SEND")
+      client_io.should receive_error(Stompede::ClientError, "must set `destination` header")
     end
   end
 
@@ -292,7 +297,7 @@ describe Stompede::Stomplet do
 
       latch.invocations_until(:close).should eq([:open, :connect, :close])
 
-      client_io.should receive_error(Stompede::ClientError, "subscription does not include a destination")
+      client_io.should receive_error(Stompede::ClientError, "must set `destination` header")
       app_monitor.wait_for_terminate
     end
 
@@ -301,7 +306,7 @@ describe Stompede::Stomplet do
 
       latch.invocations_until(:close).should eq([:open, :connect, :close])
 
-      client_io.should receive_error(Stompede::ClientError, "subscription does not include an id")
+      client_io.should receive_error(Stompede::ClientError, "must set `id` header")
       app_monitor.wait_for_terminate
     end
 
@@ -348,7 +353,7 @@ describe Stompede::Stomplet do
     it "replies with an error if subscription does not include an id" do
       send_message(client_io, "UNSUBSCRIBE")
 
-      client_io.should receive_error(Stompede::ClientError, "subscription does not include an id")
+      client_io.should receive_error(Stompede::ClientError, "must set `id` header")
       app_monitor.wait_for_terminate
     end
 
@@ -381,7 +386,7 @@ describe Stompede::Stomplet do
 
     it "is called if the session has a subscription and the app dies", error: :send do
       subscribe_subscription, _ = latch.receive(:subscribe)
-      send_message(client_io, "SEND")
+      send_message(client_io, "SEND", destination: "foo")
       unsubscribe_subscription, frame = latch.receive(:unsubscribe)
 
       frame.should be_nil

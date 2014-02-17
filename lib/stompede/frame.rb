@@ -52,11 +52,11 @@ module Stompede
     end
 
     def validate!
-      if command == :subscribe
-        raise ClientError, "subscription does not include a destination" unless headers["destination"]
+      if command == :subscribe or command == :send
+        raise ClientError, "must set `destination` header" unless headers["destination"]
       end
       if command == :subscribe or command == :unsubscribe
-        raise ClientError, "subscription does not include an id" unless headers["id"]
+        raise ClientError, "must set `id` header" unless headers["id"]
       end
       if command == :connect
         unless headers["accept-version"].split(",").include?(STOMP_VERSION)
