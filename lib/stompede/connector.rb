@@ -45,16 +45,17 @@ module Stompede
     include Celluloid::IO
     include Celluloid::Logger
 
-    def initialize(app_klass)
+    def initialize(app_klass, options = {})
       @dispatcher = Dispatcher.new_link
       @sockets = {}
       @ack_queue = {}
       @app_klass = app_klass
       @wait_for_ack = {}
+      @options = options
     end
 
     def connect(socket)
-      session = Session.new(Actor.current)
+      session = Session.new(Actor.current, server_heart_beats: @options[:heart_beats])
       @sockets[session] = socket
       read_loop(socket, session)
     ensure

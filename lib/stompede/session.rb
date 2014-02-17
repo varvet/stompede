@@ -1,11 +1,12 @@
 module Stompede
   class Session
-    attr_accessor :connected, :disconnected
+    attr_accessor :connected, :disconnected, :server_heart_beats, :client_heart_beats
 
-    def initialize(connector)
+    def initialize(connector, options = {})
       @connector = connector
       @subscriptions = {}
       @mutex = Mutex.new
+      @server_heart_beats = options[:server_heart_beats]
     end
 
     def subscriptions

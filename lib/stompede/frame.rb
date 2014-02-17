@@ -32,6 +32,10 @@ module Stompede
       @detached
     end
 
+    def heart_beats
+      (headers["heart-beat"].to_s.split(",", 2).map(&:to_i) + [0,0]).take(2)
+    end
+
     def receipt(receipt_headers = {})
       if command == :connect
         receipt_headers["version"] = STOMP_VERSION
