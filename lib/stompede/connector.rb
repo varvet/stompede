@@ -51,18 +51,18 @@ module Stompede
       @ack_queue = {}
       @app_klass = app_klass
       @wait_for_ack = {}
-      @heart_beats = options[:heart_beats] || [0, 0]
+      @heart_beats = options[:heart_beats]
     end
 
     def connect(socket)
       session = Session.new(Actor.current, server_heart_beats: @heart_beats)
       @sockets[session] = socket
-      read_loop(socket, session)
+      read_loop(session)
     ensure
       close(session)
     end
 
-    def read_loop(socket, session)
+    def read_loop(session)
       parser = StompParser::Parser.new
       heart_beat_timer = nil
 
@@ -75,19 +75,14 @@ module Stompede
       end
 
       loop do
-        chunk = begin
-          socket.readpartial(BUFFER_SIZE)
-        rescue IOError => e
-          return
-        end
-
+        chunk = read(session)
         begin
           parser.parse(chunk) do |frame|
             stompede_frame = Frame.new(session, frame.command, frame.headers, frame.body)
             if stompede_frame.command == :connect
               session.client_heart_beats = stompede_frame.heart_beats
               unless session.outgoing_heart_beats.zero?
-                heart_beat_timer = every(session.outgoing_heart_beats) { socket.write("\n") }
+                heart_beat_timer = every(session.outgoing_heart_beats) { write(session, "\n") }
               end
             end
             if stompede_frame.command == :ack or stompede_frame.command == :nack
@@ -101,12 +96,32 @@ module Stompede
           return
         end
       end
+    rescue Disconnected, AbortError
     ensure
       heart_beat_timer.cancel if heart_beat_timer
       begin
         app.terminate
       rescue Celluloid::DeadActorError
       end
+    end
+
+    def read(session)
+      socket = @sockets[session]
+      if socket
+        if session.incoming_heart_beats.zero?
+          socket.readpartial(BUFFER_SIZE)
+        else
+          timeout(session.incoming_heart_beats) do
+            socket.readpartial(BUFFER_SIZE)
+          end
+        end
+      else
+        abort Disconnected.new("client disconnected")
+      end
+    rescue Task::TimeoutError => e
+      abort Disconnected.new(e.message)
+    rescue IOError => e
+      abort Disconnected.new(e.message)
     end
 
     def write(session, data)

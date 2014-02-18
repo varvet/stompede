@@ -6,7 +6,8 @@ module Stompede
       @connector = connector
       @subscriptions = {}
       @mutex = Mutex.new
-      @server_heart_beats = options[:server_heart_beats]
+      @server_heart_beats = options[:server_heart_beats] || [0, 0]
+      @client_heart_beats = options[:client_heart_beats] || [0, 0]
     end
 
     def subscriptions
@@ -66,7 +67,15 @@ module Stompede
       if server_heart_beats[0].zero? or client_heart_beats[1].zero?
         0
       else
-        [server_heart_beats[0], client_heart_beats[0]].max
+        [server_heart_beats[0], client_heart_beats[1]].max
+      end
+    end
+
+    def incoming_heart_beats
+      if server_heart_beats[1].zero? or client_heart_beats[0].zero?
+        0
+      else
+        [server_heart_beats[1], client_heart_beats[0]].max
       end
     end
   end
