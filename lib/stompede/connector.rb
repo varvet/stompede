@@ -51,11 +51,11 @@ module Stompede
       @ack_queue = {}
       @app_klass = app_klass
       @wait_for_ack = {}
-      @options = options
+      @heart_beats = options[:heart_beats] || [0, 0]
     end
 
     def connect(socket)
-      session = Session.new(Actor.current, server_heart_beats: @options[:heart_beats])
+      session = Session.new(Actor.current, server_heart_beats: @heart_beats)
       @sockets[session] = socket
       read_loop(socket, session)
     ensure
@@ -64,6 +64,7 @@ module Stompede
 
     def read_loop(socket, session)
       parser = StompParser::Parser.new
+      heart_beat_timer = nil
 
       begin
         app = @app_klass.new(session)
@@ -83,6 +84,12 @@ module Stompede
         begin
           parser.parse(chunk) do |frame|
             stompede_frame = Frame.new(session, frame.command, frame.headers, frame.body)
+            if stompede_frame.command == :connect
+              session.client_heart_beats = stompede_frame.heart_beats
+              unless session.outgoing_heart_beats.zero?
+                heart_beat_timer = every(session.outgoing_heart_beats) { socket.write("\n") }
+              end
+            end
             if stompede_frame.command == :ack or stompede_frame.command == :nack
               respond_to_ack(stompede_frame)
             else
@@ -95,6 +102,7 @@ module Stompede
         end
       end
     ensure
+      heart_beat_timer.cancel if heart_beat_timer
       begin
         app.terminate
       rescue Celluloid::DeadActorError

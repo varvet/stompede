@@ -33,7 +33,7 @@ module Stompede
     end
 
     def heart_beats
-      (headers["heart-beat"].to_s.split(",", 2).map(&:to_i) + [0,0]).take(2)
+      (headers["heart-beat"].to_s.split(",", 2).map { |i| i.to_i / 1000.0 } + [0,0]).take(2)
     end
 
     def receipt(receipt_headers = {})

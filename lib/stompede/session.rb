@@ -61,5 +61,13 @@ module Stompede
     def inspect
       "#<Stompede::Session #{object_id}>"
     end
+
+    def outgoing_heart_beats
+      if server_heart_beats[0].zero? or client_heart_beats[1].zero?
+        0
+      else
+        [server_heart_beats[0], client_heart_beats[0]].max
+      end
+    end
   end
 end
