@@ -38,7 +38,7 @@ module Stompede
     end
   end
 
-  class WebsocketServer
+  class WebSocketServer
     def initialize(app_klass)
       @app_klass = app_klass
     end
