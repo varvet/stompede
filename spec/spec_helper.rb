@@ -9,7 +9,6 @@ require "support/helpers"
 
 io = File.open(File.expand_path("./spec.log", File.dirname(__FILE__)), "w")
 Celluloid.logger = Logger.new(io)
-Celluloid.logger.level = Logger::ERROR
 
 RSpec.configure do |config|
   config.include(Helpers)

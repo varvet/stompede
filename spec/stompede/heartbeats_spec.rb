@@ -73,6 +73,7 @@ describe Stompede::Stomplet do
 
       it "receives heart-beats at regular intervals" do
         send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "2,5")
+        client_io.write("\n")
         parse_message(client_io).command.should == "CONNECTED"
         client_io.write("\n")
         sleep 0.003
