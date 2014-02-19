@@ -18,8 +18,8 @@ module Stompede
       @connector.write(self, value.to_str)
     end
 
-    def wait_for_ack(message, timeout)
-      @connector.wait_for_ack(message, timeout)
+    def wait_for_ack(message, timeout, &block)
+      @connector.wait_for_ack(message, timeout, &block)
     rescue Celluloid::AbortError => e
       raise e.cause
     end

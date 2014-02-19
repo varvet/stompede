@@ -37,7 +37,9 @@ module Stompede
         @session.write(message)
         nil
       else
-        @session.wait_for_ack(message, timeout)
+        @session.wait_for_ack(message, timeout) do
+          @session.write(message)
+        end
       end
     end
 

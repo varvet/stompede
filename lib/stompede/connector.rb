@@ -98,11 +98,12 @@ module Stompede
 
     def wait_for_ack(message, timeout)
       @ack.expect(message)
-      write(message.session, message)
+      yield
       @ack.wait(message, timeout)
     rescue => e
       abort e
     end
+    execute_block_on_receiver :wait_for_ack
 
     # mostly useful for tests
     def waiting_for_ack?
