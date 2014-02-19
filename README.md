@@ -210,7 +210,7 @@ header, which can be one of `auto` (the default), `client` and
 `client-individual`. The STOMP spec [defines what these mean](http://stomp.github.io/stomp-specification-1.2.html#SUBSCRIBE_ack_Header).
 
 If the ack mode of a subscription isn't `auto`, calling `message` blocks until
-the client sends either an `ACK` or `NACK` frame and then returns this header.
+the client sends either an `ACK` or `NACK` frame and then returns this frame.
 Other than this, Stompede does not attach any semantics to acks. If you want
 to retry in case of a `NACK` or do something in case of an `ACK` you will need
 to implement this yourself.
