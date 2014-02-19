@@ -81,6 +81,9 @@ module Stompede
             stompede_frame = Frame.new(session, frame.command, frame.headers, frame.body)
             if stompede_frame.command == :connect
               session.client_heart_beats = stompede_frame.heart_beats
+              if @options[:require_heart_beats] and (session.incoming_heart_beats.zero? or session.incoming_heart_beats > session.server_heart_beats[1])
+                raise ClientError, "client must agree to send heart beats at least every #{(session.server_heart_beats[1] * 1000).round}ms"
+              end
               unless session.outgoing_heart_beats.zero?
                 heart_beat_timer = every(session.outgoing_heart_beats) { write(session, "\n") }
               end

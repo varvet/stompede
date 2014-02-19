@@ -84,23 +84,37 @@ describe Stompede::Stomplet do
       end
 
       it "does not send heart beats when client doesn't want to receive them" do
-        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "0,0")
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "2,0")
         parse_message(client_io).command.should == "CONNECTED"
-        sleep 0.008
+        sleep 0.003
+        client_io.write("\n")
+        sleep 0.003
         client_io.should be_an_empty_socket
       end
 
-      it "raises a client error when client doesn't want to send heart beats"
+      it "raises a client error when client doesn't want to send heart beats" do
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "0,0")
+        client_io.should receive_error(Stompede::ClientError, "client must agree to send heart beats at least every 5ms")
+      end
 
       it "lets client configure when to receive heart beats" do
-        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "0,10")
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "2,10")
         parse_message(client_io).command.should == "CONNECTED"
-        sleep 0.008
+        sleep 0.003
+        client_io.write("\n")
+        sleep 0.003
         client_io.should be_an_empty_socket
+        client_io.write("\n")
+        sleep 0.003
+        client_io.write("\n")
+        sleep 0.003
         client_io.readpartial(1000).should == "\n"
       end
 
-      it "raises a client error when client doesn't want to send heart beats often enough"
+      it "raises a client error when client doesn't want to send heart beats often enough" do
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "50,0")
+        client_io.should receive_error(Stompede::ClientError, "client must agree to send heart beats at least every 5ms")
+      end
     end
   end
 end
