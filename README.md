@@ -8,9 +8,11 @@ Stompede is a [STOMP](http://stomp.github.io/) server written in Ruby, built on
 
 With STOMP, clients can subscribe to multiple destinations and send and receive
 messages. STOMP is a transport agnostic protocol, and Stompede comes with a TCP
-server as well as a WebSocket server. The WebSocket server enables browsers to
-subscribe to multiple destinations over a single WebSocket connection, greatly
-reducing the number of open socket connections.
+server as well as a WebSocket server.
+
+The WebSocket server enables browsers to subscribe to multiple destinations
+over a single WebSocket connection, greatly reducing the number of open socket
+connections.
 
 ### Usage
 
@@ -47,14 +49,32 @@ It can then be served up via:
 Stompede::TCPServer.new(MyStomplet).listen("127.0.0.1", 8675)
 ```
 
-In this case `MyStomplet` is a `Celluloid::Actor`, and Stompede will create one
-instance of this actor for each active socket connection.
+Or to start a WebSocket server using [Reel](https://github.com/celluloid/reel):
 
-The above example illustrates all available callbacks.
+``` ruby
+Stompede::WebSocketServer.new(MyStomplet).listen("127.0.0.1", 8675)
+```
 
-`on_open` and `on_close` are always called when the socket is opened and
-when it is closed. These callbacks are dependable, and you can rely on
-Stompede always calling them, no matter what.
+You can also hook Stompede into an existing server by creating a connector and
+feeding it socket connections:
+
+``` ruby
+connector = Stompede::Connector.new(MyStomplet)
+connector.async.connect(socket)
+```
+
+In all cases Stompede will create an instance of `MyStomplet` for each active
+socket connection.
+
+### Celluloid
+
+`Stompede::Stomplet` is a Celluloid actor.
+
+`on_open` and `on_close` are always called when the socket is opened and when
+it is closed. These callbacks are dependable, and you can rely on Stompede
+always calling them.
+
+### Lifecycle callbacks
 
 `on_connect` and `on_disconnect` are called when the client sends the `CONNECT`
 and `DISCONNECT` frames respectively. Misbehaving clients may not do so. Also
@@ -63,6 +83,8 @@ clients not to call these handlers. Especially, do not rely on the
 `on_disconnect` handler to clean up any resources allocated for the client, use
 `on_close` instead. They are still useful in that clients may provide headers
 with the frames, for example for authentication.
+
+### Subscriptions
 
 `on_subscribe` receives a subscription object, on which `message` may be called,
 in order to send message to the client. For example:
@@ -176,15 +198,117 @@ You then need to manually send a receipt by calling `frame.receipt` or
 `frame.error`. These methods are thread-safe, so you can call them from
 another actor.
 
-### The ack-mode header, ACK and NACK
+### The ack header, ACK and NACK
+
+When the client establishes a subscription, they can send along a special `ack`
+header, which can be one of `auto` (the default), `client` and
+`client-individual`. The STOMP spec [defines what these mean](http://stomp.github.io/stomp-specification-1.2.html#SUBSCRIBE_ack_Header).
+
+If the ack mode of a subscription isn't `auto`, calling `message` blocks until
+the client sends either an `ACK` or `NACK` frame and then returns this header.
+Other than this, Stompede does not attach any semantics to acks. If you want
+to retry in case of a `NACK` or do something in case of an `ACK` you will need
+to implement this yourself.
+
+Stompede does provide the `message!` method which also blocks until the client
+sends `ACK` or `NACK`, but unlike `message`, it raises an exception when the
+client sends a `NACK` frame.
+
+The STOMP spec allows clients to decide for themselves which ack mode they want
+for any given subscription. If you do not trust your clients to make this call,
+you should raise an error in your `on_subscribe` handler. For example:
+
+``` ruby
+class MyStomplet < Stompede::Stomplet
+  def on_subscribe(subscription, frame)
+    unless subscription.ack_mode == :client_individual
+      raise Stompede::ClientError, "must ack all messages"
+    end
+    # ...
+  end
+end
+```
 
 ### The subscription registry
 
+*Not yet implemented :(*
+
 ### Handling global state
+
+Each Stomplet is a Celluloid actor, which means you can use Celluloid's regular
+primitives to share state between them. For example, if you want to add a
+counter which counts the number of sends:
+
+```
+class Counter
+  include Celluloid
+
+  attr_reader :count
+
+  def initialize
+    @count = 0
+  end
+
+  def mark
+    @count += 1
+  end
+end
+
+Counter.supervise_as(:counter)
+
+class MyStomplet < Stompede::Stomplet
+  def initialize(session)
+    super(session)
+    @counter = link(Actor[:counter])
+  end
+
+  def on_send(frame)
+    @counter.mark
+  end
+end
+```
+
+Since the two actors are linked, that means that if `Counter` crashes, it will
+take all instances of `MyStomplet`. This is probably what you want (since you
+cannot rely on its state anymore), but be careful.
+
+### ROFLscale with LightStomplet
+
+*Note: this doesn't fully work yet*
+
+Since Stomplets are Celluloid actors, you end up using one thread for each open
+socket. Don't worry, this is most likely fine. Celluloid can also use Ruby's
+fibers for concurrency, which are more light weight and don't have any system
+limits imposed on them. This allows you to push Stompede further than using
+Threads.
+
+If you inherit from `Stompede::LightStomplet` instead of `Stompede::Stomplet`,
+your stomplets are not Celluloid actors. This is considerably less convenient
+than the regular `Stomplet` class, since you cannot use Celluloid's awesome
+features.
+
+Since the Stompede dispatcher calls into your Stomplets, and it is a singleton,
+this means that your Stomplet is also single threaded. You should in other
+words not do any blocking IO, CPU intensive tasks in it, and you should
+definitely *not* wait for ACKs from the client, as this will lead to deadlocks.
+
+To fix this, you can either make sure your Stomplet never does something which
+blocks, or you can add workers to the dispatcher:
+
+``` ruby
+class MyStomplet < Stompede::LightStomplet
+end
+
+Stompede::TCPServer.new(MyStomplet, workers: 40)
+```
+
+This will spawn a pool of 40 workers which handle callbacks to your
+application. This means that callbacks on your Stomplet may be called from
+multiple separate threads, which means your Stomplet must be threadsafe.
 
 ### Transactions
 
-Transactions are unfortunately not yet supported, pull requests welcome!
+*Transactions are unfortunately not yet supported, pull requests welcome!*
 
 ### Development
 
