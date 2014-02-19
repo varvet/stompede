@@ -42,7 +42,7 @@ module Stompede
 
       @responses[ack_frame.ack_id] = ack_frame
 
-      if subscription.ack_mode == :cumulative
+      if subscription.ack_mode == :client
         @waiters[subscription_id].each do |id, other|
           break if other == condition
           signals << [id, other]

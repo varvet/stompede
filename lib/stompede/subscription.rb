@@ -2,7 +2,7 @@ module Stompede
   class Subscription
     attr_reader :session
 
-    ACK_MODES = { "client-individual" => :individual, "client" => :cumulative, "auto" => :auto, nil => :auto }
+    ACK_MODES = { "client-individual" => :client_individual, "client" => :client, "auto" => :auto, nil => :auto }
     DEFAULT_TIMEOUT = 5
 
     def initialize(session, frame)
