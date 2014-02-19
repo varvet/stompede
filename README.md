@@ -68,13 +68,17 @@ socket connection.
 
 ### Celluloid
 
-`Stompede::Stomplet` is a Celluloid actor.
+`Stompede::Stomplet` is a Celluloid actor. That means it creates a new thread
+for each socket connection. This means you won't have to worry about
+thread-safety, and you can take advantage of all of Celluloid's features, like
+linking and pipelining. Stomplets run in ATOM mode by default, but it is safe
+to run them in exclusive mode if you want.
+
+### Lifecycle callbacks
 
 `on_open` and `on_close` are always called when the socket is opened and when
 it is closed. These callbacks are dependable, and you can rely on Stompede
 always calling them.
-
-### Lifecycle callbacks
 
 `on_connect` and `on_disconnect` are called when the client sends the `CONNECT`
 and `DISCONNECT` frames respectively. Misbehaving clients may not do so. Also
