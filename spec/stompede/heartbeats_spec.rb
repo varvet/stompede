@@ -22,6 +22,7 @@ describe Stompede::Stomplet do
         client_io.write("\n")
         app.should be_alive
         sleep 0.008
+        client_io.should receive_error(Stompede::ClientError, "client must send heart beats at least every 5ms")
         app.should_not be_alive
       end
 
@@ -61,20 +62,24 @@ describe Stompede::Stomplet do
       let(:connector) { Stompede::Connector.new(app_klass, heart_beats: [0.005, 0.005], require_heart_beats: true) }
 
       it "sends heart-beats at regular intervals" do
-        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "0,2")
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "5,2")
         parse_message(client_io).command.should == "CONNECTED"
+        sleep 0.003
+        client_io.write("\n")
         client_io.readpartial(1000).should == "\n"
+        client_io.write("\n")
         client_io.readpartial(1000).should == "\n"
       end
 
       it "receives heart-beats at regular intervals" do
-        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "2,0")
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "heart-beat" => "2,5")
         parse_message(client_io).command.should == "CONNECTED"
         client_io.write("\n")
         sleep 0.003
         client_io.write("\n")
         app.should be_alive
         sleep 0.008
+        client_io.should receive_error(Stompede::ClientError, "client must send heart beats at least every 5ms")
         app.should_not be_alive
       end
 

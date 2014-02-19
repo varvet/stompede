@@ -51,11 +51,11 @@ module Stompede
       @ack_queue = {}
       @app_klass = app_klass
       @wait_for_ack = {}
-      @heart_beats = options[:heart_beats]
+      @options = options
     end
 
     def connect(socket)
-      session = Session.new(Actor.current, server_heart_beats: @heart_beats)
+      session = Session.new(Actor.current, server_heart_beats: @options[:heart_beats])
       @sockets[session] = socket
       read_loop(session)
     ensure
@@ -75,8 +75,8 @@ module Stompede
       end
 
       loop do
-        chunk = read(session)
         begin
+          chunk = read(session)
           parser.parse(chunk) do |frame|
             stompede_frame = Frame.new(session, frame.command, frame.headers, frame.body)
             if stompede_frame.command == :connect
@@ -91,12 +91,16 @@ module Stompede
               @dispatcher.async.dispatch(session, app, stompede_frame)
             end
           end
+        rescue Disconnected => e
+          return
+        rescue AbortError => e
+          session.error(e.cause) unless e.cause.is_a?(Disconnected)
+          return
         rescue => e
           session.error(e)
           return
         end
       end
-    rescue Disconnected
     ensure
       heart_beat_timer.cancel if heart_beat_timer
       begin
@@ -119,8 +123,7 @@ module Stompede
         abort Disconnected.new("client disconnected")
       end
     rescue Task::TimeoutError => e
-      session.error(Disconnected.new("client must send heart beats every #{(session.server_heart_beats[1] * 1000).round}ms"))
-      abort Disconnected.new(e.message)
+      abort ClientError.new("client must send heart beats at least every #{(session.server_heart_beats[1] * 1000).round}ms")
     rescue IOError => e
       abort Disconnected.new(e.message)
     end
