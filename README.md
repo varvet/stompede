@@ -274,8 +274,8 @@ end
 ```
 
 Since the two actors are linked, that means that if `Counter` crashes, it will
-take all instances of `MyStomplet`. This is probably what you want (since you
-cannot rely on its state anymore), but be careful.
+take all instances of `MyStomplet` with it. This is probably what you want
+(since you cannot rely on its state anymore), but be careful.
 
 ### ROFLscale with LightStomplet
 
