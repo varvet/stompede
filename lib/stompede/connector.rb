@@ -96,7 +96,7 @@ module Stompede
           return
         end
       end
-    rescue Disconnected, AbortError
+    rescue Disconnected
     ensure
       heart_beat_timer.cancel if heart_beat_timer
       begin
