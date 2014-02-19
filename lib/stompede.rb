@@ -25,8 +25,8 @@ module Stompede
   class TimeoutError < Error; end
 
   class TCPServer
-    def initialize(app_klass)
-      @connector = Connector.new(app_klass)
+    def initialize(app_klass, options = {})
+      @connector = Connector.new(app_klass, options)
     end
 
     def listen(*args)

@@ -1,6 +1,7 @@
 module Stompede
   class Connector
     BUFFER_SIZE = 1024 * 16
+    DEFAULT_CONNECT_TIMEOUT = 10
 
     include Celluloid::IO
     include Celluloid::Logger
@@ -21,6 +22,10 @@ module Stompede
       close(session)
     end
 
+    def connect_timeout
+      @options.fetch(:connect_timeout, DEFAULT_CONNECT_TIMEOUT)
+    end
+
     def read_loop(session)
       parser = StompParser::Parser.new
       heart_beat_timer = nil
@@ -28,6 +33,11 @@ module Stompede
       begin
         app = @app_klass.new(session)
         app.dispatch(:open)
+        if connect_timeout
+          connect_timer = after(connect_timeout) do
+            session.error(ClientError.new("must send a CONNECT or STOMP frame within #{(connect_timeout * 1000).round}ms"))
+          end
+        end
       rescue => e
         session.error(e)
         return
@@ -39,6 +49,7 @@ module Stompede
           parser.parse(chunk) do |frame|
             stompede_frame = Frame.new(session, frame.command, frame.headers, frame.body)
             if stompede_frame.command == :connect
+              connect_timer.cancel if connect_timer
               session.client_heart_beats = stompede_frame.heart_beats
               if @options[:require_heart_beats] and (session.incoming_heart_beats.zero? or session.incoming_heart_beats > session.server_heart_beats[1])
                 raise ClientError, "client must agree to send heart beats at least every #{(session.server_heart_beats[1] * 1000).round}ms"

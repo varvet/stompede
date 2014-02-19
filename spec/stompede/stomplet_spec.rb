@@ -95,6 +95,21 @@ describe Stompede::Stomplet do
       client_io.should receive_error(Stompede::ClientError, "must not send CONNECT or STOMP frame after connection is already open")
     end
 
+    context "with a connect timeout configured" do
+      let(:connector) { Stompede::Connector.new(app_klass, connect_timeout: 0.010) }
+
+      it "replies with a CONNECTED frame when the handler replies promptly" do
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
+        parse_message(client_io).command.should eq("CONNECTED")
+      end
+
+      it "replies with an ERROR frame when the handler takes too long to connect" do
+        start = Time.now
+        client_io.should receive_error(Stompede::ClientError, "must send a CONNECT or STOMP frame within 10ms")
+        (Time.now - start).should be_within(0.005).of(0.010)
+      end
+    end
+
     context "with detached frame", detach: :connect do
       it "does not send a CONNECTED frame when the client sends a CONNECT" do
         send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
