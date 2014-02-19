@@ -21,6 +21,7 @@ module Stompede
   class Error < StandardError; end
   class ClientError < Error; end
   class Disconnected < Error; end
+  class TimeoutError < Error; end
 
   class TCPServer
     def initialize(app_klass)

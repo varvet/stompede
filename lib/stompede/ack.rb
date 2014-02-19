@@ -2,6 +2,7 @@ module Stompede
   class Ack
     def initialize
       @wait_for_ack = {}
+      @responses = {}
       @ack_queue = {}
     end
 
@@ -12,26 +13,36 @@ module Stompede
 
       if subscription.ack_mode == :cumulative
         @ack_queue[subscription.id] ||= []
-        @ack_queue[subscription.id] << condition
+        @ack_queue[subscription.id] << [condition, message]
       end
 
-      ack = condition.wait(timeout)
+      Celluloid.timeout(timeout) do
+        until @responses[id]
+          condition.wait
+        end
+      end
+
+      ack = @responses.delete(id)
 
       if subscription.ack_mode == :cumulative
-        index = @ack_queue[subscription.id].index(condition)
+        index = @ack_queue[subscription.id].index([condition, message])
         if index
-          @ack_queue[subscription.id].slice!(0..index).each do |condition|
-            condition.signal(ack)
+          @ack_queue[subscription.id].slice!(0..index).each do |condition, message|
+            @responses[message["ack"]] = ack
+            condition.signal
           end
         end
       end
 
       ack
+    rescue Celluloid::Task::TimeoutError
+      raise Stompede::TimeoutError, "timed out waiting for ACK"
     end
 
     def signal(session, frame)
+      @responses[frame["id"]] = frame
       condition = @wait_for_ack[frame["id"]]
-      condition.signal(frame) if condition
+      condition.signal if condition
     end
 
     def cancel(message)

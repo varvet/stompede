@@ -43,7 +43,7 @@ describe Stompede::Subscription do
       it "times out" do
         expect do
           subscription.message("What üp?", "foo" => "Bar", timeout: 0.01)
-        end.to raise_error(Celluloid::ConditionError)
+        end.to raise_error(Stompede::TimeoutError)
         connector.should_not be_waiting_for_ack
       end
 
@@ -96,7 +96,7 @@ describe Stompede::Subscription do
       it "times out" do
         expect do
           subscription.message("What üp?", "foo" => "Bar", timeout: 0.01)
-        end.to raise_error(Celluloid::ConditionError)
+        end.to raise_error(Stompede::TimeoutError)
         connector.should_not be_waiting_for_ack
       end
 
