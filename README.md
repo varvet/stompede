@@ -17,7 +17,7 @@ reducing the number of open socket connections.
 Stompede apps are written by inheriting from `Stompede::Stomplet`:
 
 ``` ruby
-class MyApp < Stompede::Stomplet
+class MyStomplet < Stompede::Stomplet
   def on_open
   end
 
@@ -44,10 +44,10 @@ end
 It can then be served up via:
 
 ``` ruby
-Stompede::TCPServer.new(MyApp).listen("127.0.0.1", 8675)
+Stompede::TCPServer.new(MyStomplet).listen("127.0.0.1", 8675)
 ```
 
-In this case `MyApp` is a `Celluloid::Actor`, and Stompede will create one
+In this case `MyStomplet` is a `Celluloid::Actor`, and Stompede will create one
 instance of this actor for each active socket connection.
 
 The above example illustrates all available callbacks.
@@ -68,7 +68,7 @@ with the frames, for example for authentication.
 in order to send message to the client. For example:
 
 ``` ruby
-class MyApp < Stompede::Stomplet
+class MyStomplet < Stompede::Stomplet
   def on_subscribe(subscription, frame)
     @pinger = every(1) do
       subscription.message("PONG", pong: "yes")
@@ -95,7 +95,40 @@ without a valid subscription.
 
 ### Heartbeats
 
-### Disconnecting invalid or malicious clients
+Heartbeats allow you to make sure that idle clients are promptly disconnected.
+If you want your server to send or receive heartbeats, specify them like this:
+
+``` ruby
+Stompede::TCPServer.new(MyStomplet, heart_beats: [20, 50])
+```
+
+The first number specifies how often the client should send heart beats and the
+second number specifies how often the server sends heart beats. Both values are
+in seconds (note that the STOMP spec uses milliseconds).
+
+The STOMP spec allows the client to override the heartbeat setting, and essentially
+opt out of having to send heart beats. This works fine if you trust your clients,
+but if clients are untrusted, you might want to force them to send hearbeats. Stompede
+has a special option for this:
+
+``` ruby
+Stompede::TCPServer.new(MyStomplet, heart_beats: [20, 50], require_heart_beats: true)
+```
+
+### Connect timeout
+
+Compliant clients should send a `CONNECT` or `STOMP` frame shortly after
+opening a socket connection. This allows you to do authentication, and to set
+up heart beats. Malicious might open a lot of socket connections, but never
+actually send a `CONNECT` frame. By default, Stompede closes the connection if
+the client has not sent a `CONNECT` frame within 10 seconds. If you want to
+change this timeout, you can use the `connect_timeout` config option:
+
+``` ruby
+Stompede::TCPServer.new(MyStomplet, connect_timeout: 120)
+```
+
+Set it to `nil` to disable the connect timeout entirely.
 
 ### Receipts
 
@@ -114,7 +147,7 @@ receipt is sent. For example, you might want to perform some processing
 asynchronously:
 
 ``` ruby
-class MyApp < Stompede::Stomplet
+class MyStomplet < Stompede::Stomplet
   class Worker
     include Celluloid
 
