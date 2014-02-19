@@ -145,10 +145,11 @@ Stompede::TCPServer.new(MyStomplet, heart_beats: [20, 50], require_heart_beats: 
 
 Compliant clients should send a `CONNECT` or `STOMP` frame shortly after
 opening a socket connection. This allows you to do authentication, and to set
-up heart beats. Malicious might open a lot of socket connections, but never
-actually send a `CONNECT` frame. By default, Stompede closes the connection if
-the client has not sent a `CONNECT` frame within 10 seconds. If you want to
-change this timeout, you can use the `connect_timeout` config option:
+up heart beats. Malicious clients might open a lot of socket connections, but
+never actually send a `CONNECT` frame. By default, Stompede closes the
+connection if the client has not sent a `CONNECT` frame within 10 seconds. If
+you want to change this timeout, you can use the `connect_timeout` config
+option:
 
 ``` ruby
 Stompede::TCPServer.new(MyStomplet, connect_timeout: 120)
@@ -243,7 +244,7 @@ Each Stomplet is a Celluloid actor, which means you can use Celluloid's regular
 primitives to share state between them. For example, if you want to add a
 counter which counts the number of sends:
 
-```
+``` ruby
 class Counter
   include Celluloid
 
