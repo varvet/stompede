@@ -119,6 +119,7 @@ module Stompede
         abort Disconnected.new("client disconnected")
       end
     rescue Task::TimeoutError => e
+      session.error(Disconnected.new("client must send heart beats every #{(session.server_heart_beats[1] * 1000).round}ms"))
       abort Disconnected.new(e.message)
     rescue IOError => e
       abort Disconnected.new(e.message)
