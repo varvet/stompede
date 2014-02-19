@@ -25,8 +25,11 @@ module Stompede
     end
 
     def error(exception, headers = {})
-      safe_write(ErrorFrame.new(exception, headers))
-      close
+      exception = exception.cause if exception.is_a?(Celluloid::AbortError)
+      unless exception.is_a?(Disconnected)
+        safe_write(ErrorFrame.new(exception, headers))
+        close
+      end
     end
 
     def safe_write(value)

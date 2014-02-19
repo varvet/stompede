@@ -94,11 +94,6 @@ module Stompede
               @dispatcher.async.dispatch(session, app, stompede_frame)
             end
           end
-        rescue Disconnected => e
-          return
-        rescue AbortError => e
-          session.error(e.cause) unless e.cause.is_a?(Disconnected)
-          return
         rescue => e
           session.error(e)
           return
