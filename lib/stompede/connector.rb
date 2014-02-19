@@ -50,7 +50,7 @@ module Stompede
       @sockets = {}
       @app_klass = app_klass
       @options = options
-      @ack = Ack.new
+      @ack = Ack.new(Actor.current)
     end
 
     def connect(socket)
@@ -88,7 +88,7 @@ module Stompede
               end
             end
             if stompede_frame.command == :ack or stompede_frame.command == :nack
-              @ack.signal(session, stompede_frame)
+              @ack.signal(stompede_frame)
             else
               @dispatcher.async.dispatch(session, app, stompede_frame)
             end
@@ -136,13 +136,12 @@ module Stompede
       abort Disconnected.new(e.message)
     end
 
-    def write_and_wait_for_ack(session, subscription, message, timeout)
-      write(session, message)
-      @ack.wait(session, subscription, message, timeout)
+    def wait_for_ack(message, timeout)
+      @ack.expect(message)
+      write(message.session, message)
+      @ack.wait(message, timeout)
     rescue => e
       abort e
-    ensure
-      @ack.cancel(message)
     end
 
     # mostly useful for tests

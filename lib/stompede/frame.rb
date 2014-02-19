@@ -1,6 +1,7 @@
 module Stompede
   class Frame
     attr_reader :session, :command, :headers, :body
+    attr_accessor :subscription
 
     def initialize(session, command, headers, body)
       @session = session
@@ -18,6 +19,14 @@ module Stompede
 
     def [](key)
       headers[key]
+    end
+
+    def ack_id
+      if command == :message
+        headers["ack"]
+      else
+        headers["id"]
+      end
     end
 
     def destination

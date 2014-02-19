@@ -16,7 +16,7 @@ describe Stompede::Subscription do
       message.command.should eq("MESSAGE")
       message.destination.should eq("/foo")
       message["subscription"].should eq("1234")
-      message["message-id"].should match(/\A[a-f0-9\-]{36}\z/)
+      message["message-id"].should match(/\A[a-f0-9\-;]{36,}\z/)
       message.content_length.should eq(9)
     end
 
@@ -142,7 +142,7 @@ describe Stompede::Subscription do
       message.command.should eq("MESSAGE")
       message.destination.should eq("/foo")
       message["subscription"].should eq("1234")
-      message["message-id"].should match(/\A[a-f0-9\-]{36}\z/)
+      message["message-id"].should match(/\A[a-f0-9\-;]{36,}\z/)
       message.content_length.should eq(9)
     end
 

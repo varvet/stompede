@@ -27,15 +27,17 @@ module Stompede
       headers = {
         "subscription" => id,
         "destination" => destination,
-        "message-id" => SecureRandom.uuid
+        "message-id" => "#{id};#{SecureRandom.uuid}"
       }
+      headers["ack"] = headers["message-id"] unless ack_mode == :auto
+      message = Frame.new(session, "MESSAGE", headers, body)
+      message.subscription = self
+
       if ack_mode == :auto
-        @session.write(StompParser::Frame.new("MESSAGE", headers, body))
+        @session.write(message)
         nil
       else
-        headers["ack"] = headers["message-id"]
-        message = StompParser::Frame.new("MESSAGE", headers, body)
-        @session.write_and_wait_for_ack(self, message, timeout)
+        @session.wait_for_ack(message, timeout)
       end
     end
 

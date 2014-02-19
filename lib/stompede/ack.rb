@@ -1,56 +1,63 @@
 module Stompede
   class Ack
-    def initialize
-      @wait_for_ack = {}
+    def initialize(connector)
+      @connector = connector
       @responses = {}
-      @ack_queue = {}
+      @waiters = Hash.new { |h, k| h[k] = {} }
     end
 
-    def wait(session, subscription, message, timeout)
-      id = message["ack"]
+    def expect(message_frame)
       condition = Celluloid::Condition.new
-      @wait_for_ack[id] = condition
+      subscription_id = message_frame.subscription.id
+      @waiters[subscription_id][message_frame.ack_id] = condition
+    end
 
-      if subscription.ack_mode == :cumulative
-        @ack_queue[subscription.id] ||= []
-        @ack_queue[subscription.id] << [condition, message]
-      end
+    def wait(message_frame, timeout)
+      subscription_id = message_frame.subscription.id
 
       Celluloid.timeout(timeout) do
-        until @responses[id]
-          condition.wait
+        until @responses[message_frame.ack_id]
+          @waiters[subscription_id][message_frame.ack_id].wait
         end
       end
 
-      ack = @responses.delete(id)
-
-      if subscription.ack_mode == :cumulative
-        index = @ack_queue[subscription.id].index([condition, message])
-        if index
-          @ack_queue[subscription.id].slice!(0..index).each do |condition, message|
-            @responses[message["ack"]] = ack
-            condition.signal
-          end
-        end
-      end
-
-      ack
+      @responses.delete(message_frame.ack_id)
     rescue Celluloid::Task::TimeoutError
       raise Stompede::TimeoutError, "timed out waiting for ACK"
+    ensure
+      @waiters[subscription_id].delete(message_frame.ack_id)
+      @waiters.delete(subscription_id) if @waiters[subscription_id].empty?
+      @responses.delete(message_frame.ack_id)
     end
 
-    def signal(session, frame)
-      @responses[frame["id"]] = frame
-      condition = @wait_for_ack[frame["id"]]
-      condition.signal if condition
-    end
+    def signal(ack_frame)
+      subscription_id = ack_frame.ack_id.split(";").first
 
-    def cancel(message)
-      @wait_for_ack.delete(message["ack"])
+      return unless @waiters[subscription_id].has_key?(ack_frame.ack_id)
+
+      signals = []
+
+      subscription = ack_frame.session.subscriptions.find { |s| s.id == subscription_id }
+      condition = @waiters[subscription_id][ack_frame.ack_id]
+
+      @responses[ack_frame.ack_id] = ack_frame
+
+      if subscription.ack_mode == :cumulative
+        @waiters[subscription_id].each do |id, other|
+          break if other == condition
+          signals << [id, other]
+        end
+      end
+      signals << [ack_frame.ack_id, condition]
+
+      signals.each do |id, condition|
+        @responses[id] = ack_frame
+        condition.signal
+      end
     end
 
     def waiting_for_ack?
-      not @wait_for_ack.empty?
+      @waiters.any?
     end
   end
 end
