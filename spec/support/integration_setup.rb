@@ -1,3 +1,5 @@
+class MooError < StandardError; end
+
 module IntegrationSetup
   def integration_test!
     instance_eval do

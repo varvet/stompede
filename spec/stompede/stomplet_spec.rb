@@ -1,7 +1,5 @@
 # encoding: UTF-8
 
-class MooError < StandardError; end
-
 describe Stompede::Stomplet do
   integration_test!
 
