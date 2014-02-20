@@ -1,18 +1,31 @@
 class MooError < StandardError; end
 
 module IntegrationSetup
+  module InstanceMethods
+    # There is no TCPSocket.pair :(
+    def create_socket_pair
+      server = TCPServer.new("127.0.0.1", 0)
+      client = Thread.new { TCPSocket.new("127.0.0.1", server.addr[1]) }
+      [Celluloid::IO::TCPSocket.new(server.accept), client.value]
+    end
+
+    def connect_client
+      server, client = create_socket_pair
+      connector.async.connect(server)
+      send_message(client, "CONNECT", "accept-version" => Stompede::STOMP_VERSION)
+      parse_message(client).command.should eq("CONNECTED")
+      client
+    end
+  end
+
   def integration_test!
     instance_eval do
+      include InstanceMethods
       attr_accessor :app
-      # There is no TCPSocket.pair :(
-      let(:sockets) do
-        server = TCPServer.new("127.0.0.1", 0)
-        client = Thread.new { TCPSocket.new("127.0.0.1", server.addr[1]) }
-        [server.accept, client.value]
-      end
 
-      let(:client_io) { sockets[0] }
-      let(:server_io) { Celluloid::IO::TCPSocket.new(sockets[1]) }
+      let(:sockets) { create_socket_pair }
+      let(:server_io) { sockets[0] }
+      let(:client_io) { sockets[1] }
 
       let(:app_monitor) { CrashMonitor.new }
       let(:app_klass) do

@@ -5,6 +5,31 @@ module Stompede
   class Dispatcher
     include Celluloid
 
+    def initialize
+      @subscriptions ||= Hash.new { |h, k| h[k] = Set.new }
+    end
+
+    def close(session, app)
+      session.subscriptions.each do |subscription|
+        unsubscribe(subscription)
+      end
+    end
+
+    def message_all(destination, body, headers = {})
+      @subscriptions.fetch(destination, []).dup.each do |subscription|
+        subscription.message(body, headers)
+      end
+    end
+
+    def subscribe(subscription)
+      @subscriptions[subscription.destination].add(subscription)
+    end
+
+    def unsubscribe(subscription)
+      @subscriptions[subscription.destination].delete(subscription)
+      @subscriptions.delete(subscription.destination) if @subscriptions[subscription.destination].empty?
+    end
+
     def dispatch(session, app, frame)
       frame.validate!
 
@@ -23,9 +48,11 @@ module Stompede
         app.dispatch(frame.command, frame)
       when :subscribe
         subscription = session.subscribe(frame)
+        subscribe(subscription)
         app.dispatch(:subscribe, subscription, frame)
       when :unsubscribe
         subscription = session.unsubscribe(frame)
+        unsubscribe(subscription)
         app.dispatch(:unsubscribe, subscription, frame)
       end
 

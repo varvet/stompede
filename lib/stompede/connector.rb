@@ -12,6 +12,7 @@ module Stompede
       @app_klass = app_klass
       @options = options
       @ack = Ack.new(Actor.current)
+      @subscriptions = {}
     end
 
     def connect(socket)
@@ -24,6 +25,10 @@ module Stompede
 
     def connect_timeout
       @options.fetch(:connect_timeout, DEFAULT_CONNECT_TIMEOUT)
+    end
+
+    def message_all(*args)
+      @dispatcher.message_all(*args)
     end
 
     def read_loop(session)
@@ -71,6 +76,7 @@ module Stompede
       end
     ensure
       heart_beat_timer.cancel if heart_beat_timer
+      @dispatcher.async.close(session, app)
       begin
         app.terminate
       rescue Celluloid::DeadActorError
