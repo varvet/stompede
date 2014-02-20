@@ -34,7 +34,7 @@ describe Stompede::Subscription do
 
         message = parse_message(client_io)
         future.should_not be_ready
-        send_message(client_io, "ACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+        send_message(client_io, "ACK", id: message["ack"], foo: "bar")
 
         ack_frame = future.value
         ack_frame.command.should eq(:ack)
@@ -49,13 +49,12 @@ describe Stompede::Subscription do
       end
 
       it "does not acknowledge previous frames" do
-        future_one = Celluloid::Future.new { subscription.message("Hey", "foo" => "Bar") }
-        future_two = Celluloid::Future.new { subscription.message("Ho", "foo" => "Bar") }
+        future_one = Celluloid::Future.new { subscription.message("1") }
+        future_two = Celluloid::Future.new { subscription.message("2") }
 
-        message_one = parse_message(client_io)
-        message_two = parse_message(client_io)
+        message_one, message_two = [parse_message(client_io), parse_message(client_io)].sort_by(&:body)
 
-        send_message(client_io, "ACK\nid:#{message_two["ack"]}\nfoo:bar\n\n\0")
+        send_message(client_io, "ACK", id: message_two["ack"], foo: "bar")
 
         future_two.value["id"].should eq(message_two["ack"])
         future_one.should_not be_ready
@@ -66,7 +65,7 @@ describe Stompede::Subscription do
 
         message = parse_message(client_io)
         future.should_not be_ready
-        send_message(client_io, "NACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+        send_message(client_io, "NACK", id: message["ack"], foo: "bar")
 
         ack_frame = future.value
         ack_frame.command.should eq(:nack)
@@ -87,7 +86,7 @@ describe Stompede::Subscription do
 
         message = parse_message(client_io)
         future.should_not be_ready
-        send_message(client_io, "ACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+        send_message(client_io, "ACK", id: message["ack"], foo: "bar")
 
         ack_frame = future.value
         ack_frame.command.should eq(:ack)
@@ -108,7 +107,7 @@ describe Stompede::Subscription do
         message_one = parse_message(client_io)
         message_two = parse_message(client_io)
 
-        send_message(client_io, "ACK\nid:#{message_two["ack"]}\nfoo:bar\n\n\0")
+        send_message(client_io, "ACK", id: message_two["ack"], foo: "bar")
 
         future_one.value["id"].should eq(message_two["ack"])
         future_two.value["id"].should eq(message_two["ack"])
@@ -119,7 +118,7 @@ describe Stompede::Subscription do
 
         message = parse_message(client_io)
         future.should_not be_ready
-        send_message(client_io, "NACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+        send_message(client_io, "NACK", id: message["ack"], foo: "bar")
 
         ack_frame = future.value
         ack_frame.command.should eq(:nack)
@@ -169,7 +168,7 @@ describe Stompede::Subscription do
 
         message = parse_message(client_io)
         future.should_not be_ready
-        send_message(client_io, "NACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+        send_message(client_io, "NACK", id: message["ack"], foo: "bar")
 
         expect { future.value }.to raise_error(Stompede::Nack)
       end
@@ -181,7 +180,7 @@ describe Stompede::Subscription do
 
         message = parse_message(client_io)
         future.should_not be_ready
-        send_message(client_io, "NACK\nid:#{message["ack"]}\nfoo:bar\n\n\0")
+        send_message(client_io, "NACK", id: message["ack"], foo: "bar")
 
         expect { future.value }.to raise_error(Stompede::Nack)
       end
