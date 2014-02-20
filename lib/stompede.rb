@@ -7,6 +7,7 @@ require "securerandom"
 
 require "stompede/version"
 require "stompede/ack"
+require "stompede/light_stomplet"
 require "stompede/stomplet"
 require "stompede/dispatcher"
 require "stompede/connector"
