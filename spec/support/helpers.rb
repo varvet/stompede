@@ -60,7 +60,7 @@ module Helpers
 
     Timeout.timeout(0.5) do
       loop do
-        chunk = io.readpartial(Stompede::Connector::BUFFER_SIZE)
+        chunk = io.readpartial(1)
         parser.parse(chunk) do |message|
           return message
         end
