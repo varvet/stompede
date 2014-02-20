@@ -24,11 +24,11 @@ module Stompede
 
     def message(body, headers = {})
       timeout = headers.delete(:timeout) || DEFAULT_TIMEOUT # TODO: tests!
-      headers = {
+      headers.merge!({
         "subscription" => id,
         "destination" => destination,
         "message-id" => "#{id};#{SecureRandom.uuid}"
-      }
+      })
       headers["ack"] = headers["message-id"] unless ack_mode == :auto
       message = Frame.new(session, "MESSAGE", headers, body)
       message.subscription = self
