@@ -174,7 +174,7 @@ up heart beats. Malicious clients might open a lot of socket connections, but
 never actually send a `CONNECT` frame. By default, Stompede closes the
 connection if the client has not sent a `CONNECT` frame within 10 seconds. If
 you want to change this timeout, you can use the `connect_timeout` config
-option:
+option to the desired number of seconds:
 
 ``` ruby
 Stompede::TCPServer.new(MyStomplet, connect_timeout: 120)
