@@ -98,7 +98,7 @@ module Stompede
       end
     rescue Task::TimeoutError => e
       abort ClientError.new("client must send heart beats at least every #{(session.server_heart_beats[1] * 1000).round}ms")
-    rescue IOError => e
+    rescue => e
       abort Disconnected.new(e.message)
     end
 
@@ -109,7 +109,7 @@ module Stompede
       else
         abort Disconnected.new("client disconnected")
       end
-    rescue IOError => e
+    rescue => e
       abort Disconnected.new(e.message)
     end
 
@@ -130,7 +130,7 @@ module Stompede
     def close(session)
       socket = @sockets.delete(session)
       socket.close if socket
-    rescue IOError => e
+    rescue => e
     end
   end
 end
