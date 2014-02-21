@@ -1,7 +1,7 @@
 # Stompede
 
-[![Build Status](https://travis-ci.org/stompede/stompede.png?branch=master)](https://travis-ci.org/stompede/stompede)
-[![Code Climate](https://codeclimate.com/github/stompede/stompede.png)](https://codeclimate.com/github/stompede/stompede)
+[![Build Status](https://travis-ci.org/elabs/stompede.png?branch=master)](https://travis-ci.org/elabs/stompede)
+[![Code Climate](https://codeclimate.com/github/elabs/stompede.png)](https://codeclimate.com/github/elabs/stompede)
 
 Stompede is a [STOMP](http://stomp.github.io/) server written in Ruby, built on
 [Celluloid](http://celluloid.io/).
@@ -341,7 +341,7 @@ multiple separate threads, which means your Stomplet must be threadsafe.
 Development should be ez.
 
 ``` bash
-git clone git@github.com:stompede/stompede.git # git, http://git-scm.com/
+git clone git@github.com:elabs/stompede.git # git, http://git-scm.com/
 cd stompede
 bundle install # Bundler, http://bundler.io/
 rake
@@ -349,7 +349,7 @@ rake
 
 ### Contributing
 
-1. Fork it on GitHub (<http://github.com/stompede/stompede/fork>).
+1. Fork it on GitHub (<http://github.com/elabs/stompede/fork>).
 2. Create your feature branch (`git checkout -b my-new-feature`).
 3. Follow the [Development](#development) instructions in this README.
 4. Create your changes, please add tests.
