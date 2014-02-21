@@ -7,4 +7,4 @@ class BridgeStomplet < Stompede::Stomplet
 end
 
 puts "listening!"
-Stompede::WebSocketServer.new(BridgeStomplet).listen("127.0.0.1", 5000)
+Stompede::WebSocketServer.new(BridgeStomplet).listen("0.0.0.0", 5000)

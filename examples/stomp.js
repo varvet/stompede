@@ -37,7 +37,7 @@
 					}
 				}
 				if (body) {
-					out = out + 'content-length:' + body.length + '\n';
+					out = out + 'content-length:' + unescape(encodeURIComponent(body)).length + '\n';
 				}
 				out = out + '\n';
 				if (body) {
