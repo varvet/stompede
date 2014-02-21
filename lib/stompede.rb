@@ -26,6 +26,8 @@ module Stompede
   class TimeoutError < Error; end
 
   class TCPServer
+    include Celluloid::IO
+
     def initialize(app_klass, options = {})
       @connector = Connector.new(app_klass, options)
     end
@@ -35,10 +37,19 @@ module Stompede
     end
 
     def listen(*args)
-      server = ::TCPServer.new(*args)
+      @server = Celluloid::IO::TCPServer.new(*args)
+      async.accept
+    end
+
+    def close
+      @server.close if @server
+    end
+
+  private
+
+    def accept
       loop do
-        socket = server.accept
-        @connector.async.connect(Celluloid::IO::TCPSocket.new(socket))
+        @connector.async.connect(@server.accept)
       end
     end
   end
@@ -64,7 +75,7 @@ module Stompede
 
     def listen(*args)
       require "reel"
-      Reel::Server.run(*args) do |connection|
+      @server = Reel::Server.supervise(*args) do |connection|
         connection.each_request do |request|
           if request.websocket?
             @connector.async.connect(Socket.new(request.websocket))
@@ -73,6 +84,11 @@ module Stompede
           end
         end
       end
+    end
+
+    def close
+      @server.terminate if @server
+    rescue Celluloid::DeadActorError
     end
   end
 end
