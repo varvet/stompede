@@ -40,8 +40,8 @@ module Stompede
   end
 
   class WebSocketServer
-    def initialize(app_klass)
-      @app_klass = app_klass
+    def initialize(app_klass, options = {})
+      @connector = Connector.new(app_klass, options)
     end
 
     class Socket < SimpleDelegator
@@ -59,7 +59,7 @@ module Stompede
       Reel::Server.run(*args) do |connection|
         connection.each_request do |request|
           if request.websocket?
-            @app_klass.new(Socket.new(request.websocket))
+            @connector.async.connect(Socket.new(request.websocket))
           else
             request.respond :ok, "Stompede"
           end
