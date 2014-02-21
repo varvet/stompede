@@ -3,12 +3,12 @@
 [![Build Status](https://travis-ci.org/elabs/stompede.png?branch=master)](https://travis-ci.org/elabs/stompede)
 [![Code Climate](https://codeclimate.com/github/elabs/stompede.png)](https://codeclimate.com/github/elabs/stompede)
 
-Stompede is a [STOMP](http://stomp.github.io/) server written in Ruby, built on
-[Celluloid](http://celluloid.io/).
+Stompede is a Pub/Sub server which implements the [STOMP](http://stomp.github.io/)
+protocol. It is written in Ruby, on top of [Celluloid](http://celluloid.io/).
 
-With STOMP, clients can subscribe to multiple destinations and send and receive
-messages. STOMP is a transport agnostic protocol, and Stompede comes with a TCP
-server as well as a WebSocket server.
+Clients can subscribe to multiple destinations and send and receive messages.
+STOMP is a transport agnostic protocol, and Stompede comes with a TCP server as
+well as a WebSocket server.
 
 The WebSocket server enables browsers to subscribe to multiple destinations
 over a single WebSocket connection, greatly reducing the number of open socket
