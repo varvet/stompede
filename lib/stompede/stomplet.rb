@@ -6,7 +6,7 @@ module Stompede
 
     def dispatch(*)
       super
-    rescue Disconnect => e
+    rescue Disconnected => e
       terminate
     end
 
