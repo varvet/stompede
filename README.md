@@ -125,7 +125,7 @@ You can send a message to everyone who subscribes to a given destination. You ca
 do this by using `message_all` on the session object within your Stomplet. For
 example:
 
-```
+``` ruby
 class BridgeStomplet < Stompede::Stomplet
   def on_send(frame)
     session.message_all(frame.destination, frame.body)
