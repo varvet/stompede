@@ -24,6 +24,8 @@ module Stompede
 
     def message(body, headers = {})
       timeout = headers.delete(:timeout) || DEFAULT_TIMEOUT # TODO: tests!
+      wait = headers.fetch(:wait, true)
+      headers.delete(:wait)
       headers.merge!({
         "subscription" => id,
         "destination" => destination,
@@ -33,7 +35,7 @@ module Stompede
       message = Frame.new(session, "MESSAGE", headers, body)
       message.subscription = self
 
-      if ack_mode == :auto or not headers.fetch(:wait, true)
+      if ack_mode == :auto or not wait
         @session.write(message)
         nil
       else
