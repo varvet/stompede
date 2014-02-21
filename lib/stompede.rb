@@ -30,6 +30,10 @@ module Stompede
       @connector = Connector.new(app_klass, options)
     end
 
+    def message_all(*args)
+      @connector.message_all(*args)
+    end
+
     def listen(*args)
       server = ::TCPServer.new(*args)
       loop do
@@ -52,6 +56,10 @@ module Stompede
       def readpartial(*args)
         read
       end
+    end
+
+    def message_all(*args)
+      @connector.message_all(*args)
     end
 
     def listen(*args)

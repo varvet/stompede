@@ -10,6 +10,10 @@ module Stompede
       @client_heart_beats = options[:client_heart_beats] || [0, 0]
     end
 
+    def message_all(*args)
+      @connector.message_all(*args)
+    end
+
     def subscriptions
       @mutex.synchronize { @subscriptions.values }
     end
