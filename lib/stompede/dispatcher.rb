@@ -17,7 +17,7 @@ module Stompede
 
     def message_all(destination, body, headers = {})
       @subscriptions.fetch(destination, []).dup.each do |subscription|
-        subscription.message(body, headers)
+        subscription.message(body, headers.merge(wait: false))
       end
     end
 
