@@ -21,24 +21,31 @@ Stompede apps are written by inheriting from `Stompede::Stomplet`:
 ``` ruby
 class MyStomplet < Stompede::Stomplet
   def on_open
+    # called when the socket is opened
   end
 
   def on_connect(frame)
+    # called when the client sends a CONNECT frame
   end
 
   def on_subscribe(subscription, frame)
+    # called when the client sends a SUBSCRIBE frame
   end
 
   def on_send(frame)
+    # called when the client sends a SEND frame
   end
 
   def on_unsubscribe(subscription, frame)
+    # called when the client sends a UNSUBSCRIBE frame
   end
 
   def on_disconnect(frame)
+    # called when the client sends a DISCONNECT frame
   end
 
   def on_close
+    # called when the socket is closed
   end
 end
 ```
