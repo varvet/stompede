@@ -33,7 +33,7 @@ module Stompede
       message = Frame.new(session, "MESSAGE", headers, body)
       message.subscription = self
 
-      if ack_mode == :auto
+      if ack_mode == :auto or not headers.fetch(:wait, true)
         @session.write(message)
         nil
       else

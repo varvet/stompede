@@ -41,6 +41,11 @@ describe Stompede::Subscription do
         ack_frame["foo"].should eq("bar")
       end
 
+      it "does no wait for a response when wait: false given" do
+        subscription.message("Hello", wait: false).should be_false
+        parse_message(client_io).body.should eq("Hello")
+      end
+
       it "times out" do
         expect do
           subscription.message("What üp?", "foo" => "Bar", timeout: 0.01)
@@ -91,6 +96,11 @@ describe Stompede::Subscription do
         ack_frame = future.value
         ack_frame.command.should eq(:ack)
         ack_frame["foo"].should eq("bar")
+      end
+
+      it "does no wait for a response when wait: false given" do
+        subscription.message("Hello", wait: false).should be_false
+        parse_message(client_io).body.should eq("Hello")
       end
 
       it "times out" do
