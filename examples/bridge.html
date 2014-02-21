@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <script src="stomp.js"></script>
+    <script>
+      client = Stomp.client("ws://localhost:5000")
+      client.connect(null, null, function() {
+        console.log("Connected!")
+        client.subscribe("chat", function(message) {
+          var li = document.createElement("li");
+          li.textContent = message.body;
+          document.getElementById("messages").appendChild(li);
+        });
+      });
+      document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("send").addEventListener("submit", function(event) {
+          client.send("chat", {}, document.getElementById("message").value);
+          event.preventDefault();
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+    <form id="send">
+      <input id="message"/>
+      <button>Send</button>
+    </form>
+
+    <ul id="messages">
+    </ul>
+  </body>
+</html>
