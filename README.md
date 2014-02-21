@@ -119,6 +119,31 @@ server can send messages to the client, and that messages must be tied to a
 subscription, this is why it is not possible to send messages to a client
 without a valid subscription.
 
+### Messaging everyone
+
+You can send a message to everyone who subscribes to a given destination. You can
+do this by using `message_all` on the session object within your Stomplet. For
+example:
+
+```
+class BridgeStomplet < Stompede::Stomplet
+  def on_send(frame)
+    session.message_all(frame.destination, frame.body)
+  end
+end
+```
+
+This simple Stomplet will act as a bridge, proxying SEND frames the client
+sends to all subscribers of the frame's destination. The `message_all` method
+is also available on servers and connectors:
+
+``` ruby
+server = Stompede::WebSocketServer.new(MyStomplet)
+server.listen("127.0.0.1", 8675)
+# ... later ...
+server.message_all("some_destination", "Hello!")
+```
+
 ### Heartbeats
 
 Heartbeats allow you to make sure that idle clients are promptly disconnected.
@@ -233,10 +258,6 @@ class MyStomplet < Stompede::Stomplet
   end
 end
 ```
-
-### The subscription registry
-
-*Not yet implemented :(*
 
 ### Handling global state
 
