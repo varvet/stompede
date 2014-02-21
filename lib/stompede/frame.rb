@@ -72,7 +72,7 @@ module Stompede
         raise ClientError, "must set `id` header" unless headers["id"]
       end
       if command == :connect
-        unless headers["accept-version"].split(",").include?(STOMP_VERSION)
+        unless headers["accept-version"].to_s.split(",").include?(STOMP_VERSION)
           error = ClientError.new("client must support STOMP version #{STOMP_VERSION}")
           error(error, version: STOMP_VERSION)
           raise error
