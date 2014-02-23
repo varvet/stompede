@@ -12,7 +12,6 @@ module Stompede
       @app_klass = app_klass
       @options = options
       @ack = Ack.new(Actor.current)
-      @subscriptions = {}
     end
 
     def connect(socket)
