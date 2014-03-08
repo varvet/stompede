@@ -78,8 +78,12 @@ socket connection.
 `Stompede::Stomplet` is a Celluloid actor. That means it creates a new thread
 for each socket connection. This means you won't have to worry about
 thread-safety, and you can take advantage of all of Celluloid's features, like
-linking and pipelining. Stomplets run in ATOM mode by default, but it is safe
-to run them in exclusive mode if you want.
+linking and pipelining.
+
+Stomplets run in ATOM mode by default, but it is safe to run them in exclusive
+mode if you want. See the celluloid documentation about [execution
+modes](https://github.com/celluloid/celluloid/wiki/Pipelining-and-execution-modes)
+for more details.
 
 ### Lifecycle callbacks
 
