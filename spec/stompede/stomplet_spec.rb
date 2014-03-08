@@ -93,6 +93,15 @@ describe Stompede::Stomplet do
       client_io.should receive_error(Stompede::ClientError, "must not send CONNECT or STOMP frame after connection is already open")
     end
 
+    context "with a nil timeout" do
+      let(:connector) { Stompede::Connector.new(app_klass, connect_timeout: nil) }
+
+      it "does not time out (we can't really test this in any sensible way)" do
+        send_message(client_io, "CONNECT", "accept-version" => Stompede::STOMP_VERSION, "foo" => "Bar")
+        parse_message(client_io).command.should eq("CONNECTED")
+      end
+    end
+
     context "with a connect timeout configured" do
       let(:connector) { Stompede::Connector.new(app_klass, connect_timeout: 0.010) }
 
